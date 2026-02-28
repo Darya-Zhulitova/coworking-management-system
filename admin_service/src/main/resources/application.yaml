@@ -21,6 +21,11 @@ spring:
   profiles:
     active: dev
 
+app:
+  jwt:
+    secret: 53A73E5F1CBE0A2E3B5F2D784E6A1B423D3F247X1F6E5C3A596D635A75327855
+    expiration: 86400000
+
 server:
   port: 8081
 
