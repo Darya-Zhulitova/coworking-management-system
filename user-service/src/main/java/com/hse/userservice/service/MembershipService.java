@@ -1,5 +1,7 @@
 package com.hse.userservice.service;
 
+import com.hse.userservice.client.AdminServiceClient;
+import com.hse.userservice.client.dto.CoworkingInfo;
 import com.hse.userservice.domain.membership.Membership;
 import com.hse.userservice.dto.request.CreateMembershipDto;
 import com.hse.userservice.dto.response.MembershipDto;
@@ -14,9 +16,18 @@ import java.util.List;
 public class MembershipService {
 
     private final MembershipRepository membershipRepository;
+    private final AdminServiceClient adminServiceClient;
 
     public MembershipDto create(CreateMembershipDto dto) {
         validateCreateRequest(dto);
+
+        CoworkingInfo coworking = adminServiceClient.getCoworkingById(dto.coworkingId());
+        if (coworking == null) {
+            throw new IllegalArgumentException("Coworking not found: " + dto.coworkingId());
+        }
+        if (!coworking.active()) {
+            throw new IllegalArgumentException("Coworking is inactive: " + dto.coworkingId());
+        }
 
         Membership membership = new Membership();
         membership.setCoworkingId(dto.coworkingId());
@@ -39,6 +50,9 @@ public class MembershipService {
     }
 
     private void validateCreateRequest(CreateMembershipDto dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("Request body must not be null");
+        }
         if (dto.coworkingId() == null) {
             throw new IllegalArgumentException("coworkingId must not be null");
         }
