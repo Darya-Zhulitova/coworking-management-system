@@ -19,12 +19,12 @@ public class MembershipService {
     private final AdminServiceClient adminServiceClient;
 
     public MembershipDto create(CreateMembershipDto dto) {
-        validateCreateRequest(dto);
-
         CoworkingInfo coworking = adminServiceClient.getCoworkingById(dto.coworkingId());
+
         if (coworking == null) {
             throw new IllegalArgumentException("Coworking not found: " + dto.coworkingId());
         }
+
         if (!coworking.active()) {
             throw new IllegalArgumentException("Coworking is inactive: " + dto.coworkingId());
         }
@@ -37,34 +37,16 @@ public class MembershipService {
     }
 
     public List<MembershipDto> getAll() {
-        return membershipRepository.findAll()
-                .stream()
-                .map(this::toDto)
-                .toList();
+        return membershipRepository.findAll().stream().map(this::toDto).toList();
     }
 
     public MembershipDto getById(Long id) {
-        Membership membership = membershipRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Membership not found: " + id));
+        Membership membership = membershipRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Membership not found: " + id));
+
         return toDto(membership);
     }
 
-    private void validateCreateRequest(CreateMembershipDto dto) {
-        if (dto == null) {
-            throw new IllegalArgumentException("Request body must not be null");
-        }
-        if (dto.coworkingId() == null) {
-            throw new IllegalArgumentException("coworkingId must not be null");
-        }
-    }
-
     private MembershipDto toDto(Membership membership) {
-        return new MembershipDto(
-                membership.getId(),
-                membership.getCoworkingId(),
-                membership.getBalance(),
-                membership.getStatus(),
-                membership.getCreatedAt()
-        );
+        return new MembershipDto(membership.getId(), membership.getCoworkingId(), membership.getBalance(), membership.getStatus(), membership.getCreatedAt());
     }
 }

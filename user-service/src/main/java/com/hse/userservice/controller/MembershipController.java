@@ -3,6 +3,7 @@ package com.hse.userservice.controller;
 import com.hse.userservice.dto.request.CreateMembershipDto;
 import com.hse.userservice.dto.response.MembershipDto;
 import com.hse.userservice.service.MembershipService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +19,7 @@ public class MembershipController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public MembershipDto create(@RequestBody CreateMembershipDto dto) {
+    public MembershipDto create(@Valid @RequestBody CreateMembershipDto dto) {
         return membershipService.create(dto);
     }
 
