@@ -4,6 +4,7 @@ import com.hse.adminservice.dto.CoworkingCreateRequest;
 import com.hse.adminservice.dto.CoworkingResponse;
 import com.hse.adminservice.dto.CoworkingUpdateRequest;
 import com.hse.adminservice.entity.Coworking;
+import com.hse.adminservice.exception.ResourceNotFoundException;
 import com.hse.adminservice.repository.CoworkingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,14 +34,14 @@ public class CoworkingServiceImpl implements CoworkingService {
 
     @Override
     public CoworkingResponse getById(Long id) {
-        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id).orElseThrow(() -> new RuntimeException("Coworking not found"));
+        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id).orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 
         return mapToResponse(coworking);
     }
 
     @Override
     public CoworkingResponse update(Long id, CoworkingUpdateRequest request) {
-        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id).orElseThrow(() -> new RuntimeException("Coworking not found"));
+        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id).orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 
         coworking.setName(request.getName());
         if (request.getActive() != null) {
@@ -53,7 +54,7 @@ public class CoworkingServiceImpl implements CoworkingService {
 
     @Override
     public void archive(Long id) {
-        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id).orElseThrow(() -> new RuntimeException("Coworking not found"));
+        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id).orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 
         coworking.setArchived(true);
         coworking.setArchivedAt(LocalDateTime.now());

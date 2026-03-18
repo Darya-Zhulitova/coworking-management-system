@@ -1,5 +1,7 @@
 package com.hse.adminservice.service;
 
+import com.hse.adminservice.exception.ConflictException;
+import com.hse.adminservice.exception.ResourceNotFoundException;
 import com.hse.adminservice.dto.PlaceCreateRequest;
 import com.hse.adminservice.dto.PlaceResponse;
 import com.hse.adminservice.dto.PlaceUpdateRequest;
@@ -22,10 +24,10 @@ public class PlaceServiceImpl implements PlaceService {
 
     @Override
     public PlaceResponse create(Long coworkingId, PlaceCreateRequest request) {
-        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId).orElseThrow(() -> new RuntimeException("Coworking not found"));
+        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId).orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 
         if (placeRepository.existsByCoworkingIdAndNameAndArchivedFalse(coworkingId, request.getName())) {
-            throw new RuntimeException("Place name must be unique within coworking");
+            throw new ConflictException("Place name must be unique within coworking");
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -42,17 +44,17 @@ public class PlaceServiceImpl implements PlaceService {
 
     @Override
     public PlaceResponse getById(Long coworkingId, Long placeId) {
-        Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId).orElseThrow(() -> new RuntimeException("Place not found"));
+        Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId).orElseThrow(() -> new ResourceNotFoundException("Place not found"));
 
         return map(place);
     }
 
     @Override
     public PlaceResponse update(Long coworkingId, Long placeId, PlaceUpdateRequest request) {
-        Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId).orElseThrow(() -> new RuntimeException("Place not found"));
+        Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId).orElseThrow(() -> new ResourceNotFoundException("Place not found"));
 
         if (!place.getName().equals(request.getName()) && placeRepository.existsByCoworkingIdAndNameAndArchivedFalse(coworkingId, request.getName())) {
-            throw new RuntimeException("Place name must be unique within coworking");
+            throw new ConflictException("Place name must be unique within coworking");
         }
 
         place.setName(request.getName());
@@ -72,7 +74,7 @@ public class PlaceServiceImpl implements PlaceService {
 
     @Override
     public void archive(Long coworkingId, Long placeId) {
-        Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId).orElseThrow(() -> new RuntimeException("Place not found"));
+        Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId).orElseThrow(() -> new ResourceNotFoundException("Place not found"));
 
         place.setArchived(true);
         place.setArchivedAt(LocalDateTime.now());
