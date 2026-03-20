@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: admin-service
+
+  datasource:
+    url: jdbc:h2:mem:admin-db
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  profiles:
+    active: dev
+
+app:
+  jwt:
+    secret: 53A73E5F1CBE0A2E3B5F2D784E6A1B423D3F247X1F6E5C3A596D635A75327855
+    expiration: 86400000
+
+server:
+  port: 8081
+
+logging:
+  level:
+    root: INFO
+    com.hse.adminservice: DEBUG
+    org.hibernate.SQL: DEBUG
