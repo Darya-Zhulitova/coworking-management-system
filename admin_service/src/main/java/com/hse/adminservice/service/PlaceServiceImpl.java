@@ -1,12 +1,12 @@
 package com.hse.adminservice.service;
 
-import com.hse.adminservice.exception.ConflictException;
-import com.hse.adminservice.exception.ResourceNotFoundException;
 import com.hse.adminservice.dto.PlaceCreateRequest;
 import com.hse.adminservice.dto.PlaceResponse;
 import com.hse.adminservice.dto.PlaceUpdateRequest;
 import com.hse.adminservice.entity.Coworking;
 import com.hse.adminservice.entity.Place;
+import com.hse.adminservice.exception.ConflictException;
+import com.hse.adminservice.exception.ResourceNotFoundException;
 import com.hse.adminservice.repository.CoworkingRepository;
 import com.hse.adminservice.repository.PlaceRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,10 +21,14 @@ public class PlaceServiceImpl implements PlaceService {
 
     private final PlaceRepository placeRepository;
     private final CoworkingRepository coworkingRepository;
+    private final CurrentAdminService currentAdminService;
+    private final AdminCoworkingAccessService accessService;
 
     @Override
     public PlaceResponse create(Long coworkingId, PlaceCreateRequest request) {
-        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId).orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+        accessService.requireAccess(currentAdminService.getCurrentAdmin().getId(), coworkingId);
+        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 
         if (placeRepository.existsByCoworkingIdAndNameAndArchivedFalse(coworkingId, request.getName())) {
             throw new ConflictException("Place name must be unique within coworking");
@@ -32,28 +36,44 @@ public class PlaceServiceImpl implements PlaceService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        Place place = Place.builder().name(request.getName()).type(request.getType()).coworking(coworking).active(true).archived(false).archivedAt(null).createdAt(now).updatedAt(now).build();
+        Place place = Place.builder()
+                .name(request.getName())
+                .type(request.getType())
+                .coworking(coworking)
+                .active(true)
+                .archived(false)
+                .archivedAt(null)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
 
         return map(placeRepository.save(place));
     }
 
     @Override
     public List<PlaceResponse> getAll(Long coworkingId) {
+        accessService.requireAccess(currentAdminService.getCurrentAdmin().getId(), coworkingId);
         return placeRepository.findAllByCoworkingIdAndArchivedFalse(coworkingId).stream().map(this::map).toList();
     }
 
     @Override
     public PlaceResponse getById(Long coworkingId, Long placeId) {
-        Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId).orElseThrow(() -> new ResourceNotFoundException("Place not found"));
+        accessService.requireAccess(currentAdminService.getCurrentAdmin().getId(), coworkingId);
+        Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Place not found"));
 
         return map(place);
     }
 
     @Override
     public PlaceResponse update(Long coworkingId, Long placeId, PlaceUpdateRequest request) {
-        Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId).orElseThrow(() -> new ResourceNotFoundException("Place not found"));
+        accessService.requireAccess(currentAdminService.getCurrentAdmin().getId(), coworkingId);
+        Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Place not found"));
 
-        if (!place.getName().equals(request.getName()) && placeRepository.existsByCoworkingIdAndNameAndArchivedFalse(coworkingId, request.getName())) {
+        if (!place.getName().equals(request.getName()) && placeRepository.existsByCoworkingIdAndNameAndArchivedFalse(coworkingId,
+                request.getName()
+        )) {
             throw new ConflictException("Place name must be unique within coworking");
         }
 
@@ -74,7 +94,9 @@ public class PlaceServiceImpl implements PlaceService {
 
     @Override
     public void archive(Long coworkingId, Long placeId) {
-        Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId).orElseThrow(() -> new ResourceNotFoundException("Place not found"));
+        accessService.requireAccess(currentAdminService.getCurrentAdmin().getId(), coworkingId);
+        Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Place not found"));
 
         place.setArchived(true);
         place.setArchivedAt(LocalDateTime.now());
@@ -85,6 +107,16 @@ public class PlaceServiceImpl implements PlaceService {
     }
 
     private PlaceResponse map(Place place) {
-        return PlaceResponse.builder().id(place.getId()).name(place.getName()).type(place.getType()).active(place.getActive()).archived(place.getArchived()).archivedAt(place.getArchivedAt()).createdAt(place.getCreatedAt()).updatedAt(place.getUpdatedAt()).coworkingId(place.getCoworking().getId()).build();
+        return PlaceResponse.builder()
+                .id(place.getId())
+                .name(place.getName())
+                .type(place.getType())
+                .active(place.getActive())
+                .archived(place.getArchived())
+                .archivedAt(place.getArchivedAt())
+                .createdAt(place.getCreatedAt())
+                .updatedAt(place.getUpdatedAt())
+                .coworkingId(place.getCoworking().getId())
+                .build();
     }
 }

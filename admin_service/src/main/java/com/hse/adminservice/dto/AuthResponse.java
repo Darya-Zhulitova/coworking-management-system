@@ -1,10 +1,9 @@
 package com.hse.adminservice.dto;
 
 import lombok.Builder;
-import lombok.Value;
 
-@Value
+import java.util.List;
+
 @Builder
-public class AuthResponse {
-    String token;
+public record AuthResponse(String token, Long adminUserId, List<AccessibleCoworkingResponse> coworkings) {
 }

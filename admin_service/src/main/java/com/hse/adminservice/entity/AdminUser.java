@@ -24,10 +24,6 @@ public class AdminUser {
     @Column(nullable = false)
     private String passwordHash;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AdminRole role;
-
     @Column(nullable = false)
     private Boolean active;
 

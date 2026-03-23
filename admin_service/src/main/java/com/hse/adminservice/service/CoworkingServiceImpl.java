@@ -17,31 +17,47 @@ import java.util.List;
 public class CoworkingServiceImpl implements CoworkingService {
 
     private final CoworkingRepository coworkingRepository;
+    private final CurrentAdminService currentAdminService;
+    private final AdminCoworkingAccessService accessService;
 
     @Override
     public CoworkingResponse create(CoworkingCreateRequest request) {
         LocalDateTime now = LocalDateTime.now();
 
-        Coworking coworking = Coworking.builder().name(request.getName()).active(true).archived(false).archivedAt(null).createdAt(now).updatedAt(now).build();
+        Coworking coworking = Coworking.builder()
+                .name(request.getName())
+                .active(true)
+                .archived(false)
+                .archivedAt(null)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
 
-        return mapToResponse(coworkingRepository.save(coworking));
+        Coworking saved = coworkingRepository.save(coworking);
+        accessService.grantOwnerAccess(currentAdminService.getCurrentAdmin(), saved);
+        return mapToResponse(saved);
     }
 
     @Override
     public List<CoworkingResponse> getAll() {
-        return coworkingRepository.findAllByArchivedFalse().stream().map(this::mapToResponse).toList();
+        Long adminUserId = currentAdminService.getCurrentAdmin().getId();
+        return accessService.getAccessibleCoworkings(adminUserId).stream().map(access -> getById(access.id())).toList();
     }
 
     @Override
     public CoworkingResponse getById(Long id) {
-        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id).orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+        accessService.requireAccess(currentAdminService.getCurrentAdmin().getId(), id);
+        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 
         return mapToResponse(coworking);
     }
 
     @Override
     public CoworkingResponse update(Long id, CoworkingUpdateRequest request) {
-        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id).orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+        accessService.requireAccess(currentAdminService.getCurrentAdmin().getId(), id);
+        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 
         coworking.setName(request.getName());
         if (request.getActive() != null) {
@@ -54,7 +70,9 @@ public class CoworkingServiceImpl implements CoworkingService {
 
     @Override
     public void archive(Long id) {
-        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id).orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+        accessService.requireAccess(currentAdminService.getCurrentAdmin().getId(), id);
+        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 
         coworking.setArchived(true);
         coworking.setArchivedAt(LocalDateTime.now());
@@ -65,6 +83,14 @@ public class CoworkingServiceImpl implements CoworkingService {
     }
 
     private CoworkingResponse mapToResponse(Coworking coworking) {
-        return CoworkingResponse.builder().id(coworking.getId()).name(coworking.getName()).active(coworking.getActive()).archived(coworking.getArchived()).archivedAt(coworking.getArchivedAt()).createdAt(coworking.getCreatedAt()).updatedAt(coworking.getUpdatedAt()).build();
+        return CoworkingResponse.builder()
+                .id(coworking.getId())
+                .name(coworking.getName())
+                .active(coworking.getActive())
+                .archived(coworking.getArchived())
+                .archivedAt(coworking.getArchivedAt())
+                .createdAt(coworking.getCreatedAt())
+                .updatedAt(coworking.getUpdatedAt())
+                .build();
     }
 }
