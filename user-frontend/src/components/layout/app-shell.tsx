@@ -1,10 +1,15 @@
+import { ReactNode } from "react";
 import { AppHeader } from "./app-header";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+type AppShellProps = {
+  children: ReactNode;
+};
+
+export function AppShell({ children }: AppShellProps) {
   return (
     <div>
       <AppHeader />
-      <main>{children}</main>
+      <main className="page">{children}</main>
     </div>
   );
 }
