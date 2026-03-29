@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createServiceRequest, getServiceRequests } from "@/lib/api";
-import type { CreateServiceRequestPayload, ServiceRequest } from "@/lib/types";
+import {useEffect, useState} from "react";
+import {createServiceRequest, getServiceRequests} from "@/lib/api";
+import type {CreateServiceRequestPayload, ServiceRequest} from "@/lib/types";
 
 const initialForm: CreateServiceRequestPayload = {
   membershipId: 1,
@@ -165,7 +165,7 @@ export function ServiceRequestsPanel() {
       {message ? <p className="message">{message}</p> : null}
       {error ? <p className="error">{error}</p> : null}
 
-      <div className="row" style={{ marginTop: 16 }}>
+      <div className="row" style={{marginTop: 16}}>
         {requests.length === 0 ? (
           <p className="muted">Пока нет данных.</p>
         ) : (

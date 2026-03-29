@@ -1,3 +1,15 @@
+export type Membership = {
+  id: number;
+  coworkingId: number;
+  balance: string;
+  status: string;
+  createdAt: string;
+};
+
+export type CreateMembershipPayload = {
+  coworkingId: number;
+};
+
 export type ServiceRequest = {
   id: number;
   membershipId: number;

@@ -1,5 +1,7 @@
 import type {
+  CreateMembershipPayload,
   CreateServiceRequestPayload,
+  Membership,
   ServiceRequest,
 } from "./types";
 
@@ -19,6 +21,19 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   return response.json();
+}
+
+export function getMemberships(): Promise<Membership[]> {
+  return request("/api/memberships");
+}
+
+export function createMembership(
+  payload: CreateMembershipPayload
+): Promise<Membership> {
+  return request("/api/memberships", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function getServiceRequests(): Promise<ServiceRequest[]> {

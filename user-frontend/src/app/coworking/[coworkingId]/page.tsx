@@ -1,18 +1,18 @@
 type CoworkingPageProps = {
-    params: Promise<{
-        coworkingId: string;
-    }>;
+  params: Promise<{
+    coworkingId: string;
+  }>;
 };
 
-export default async function CoworkingPage({
-                                                params,
-                                            }: CoworkingPageProps) {
-    const { coworkingId } = await params;
+export default async function CoworkingPage({params}: CoworkingPageProps) {
+  const {coworkingId} = await params;
 
-    return (
-        <section>
-            <h1>Coworking page</h1>
-            <p>Coworking: {coworkingId}</p>
-        </section>
-    );
+  return (
+    <div>
+      <div className="panel">
+        <h2>Coworking</h2>
+        <p>Текущий coworkingId: <strong>{coworkingId}</strong></p>
+      </div>
+    </div>
+  );
 }

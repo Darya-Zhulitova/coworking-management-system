@@ -1,4 +1,4 @@
-import { ServiceRequestsPanel } from "@/components/features/service-requests/service-requests-panel";
+import {ServiceRequestsPanel} from "@/components/features/service-requests/service-requests-panel";
 
 export default function RequestsPage() {
   return (
@@ -6,7 +6,7 @@ export default function RequestsPage() {
       <div className="panel">
         <h2>Service requests</h2>
       </div>
-      <ServiceRequestsPanel />
+      <ServiceRequestsPanel/>
     </div>
   );
 }
