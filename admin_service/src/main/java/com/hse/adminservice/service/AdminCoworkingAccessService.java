@@ -8,7 +8,6 @@ import com.hse.adminservice.entity.Coworking;
 import com.hse.adminservice.repository.AdminCoworkingAccessRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import com.hse.adminservice.exception.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,22 +27,18 @@ public class AdminCoworkingAccessService {
                         .build()).toList();
     }
 
-    public void requireAccess(Long adminUserId, Long coworkingId) {
-        boolean hasAccess = accessRepository.existsByAdminUserIdAndCoworkingIdAndActiveTrueAndCoworkingArchivedFalse(
-                adminUserId,
-                coworkingId
-        );
-        if (!hasAccess) {
-            throw new ResourceNotFoundException("Coworking not found");
-        }
-    }
-
     public AdminCoworkingAccess grantOwnerAccess(AdminUser adminUser, Coworking coworking) {
         return accessRepository.findByAdminUserIdAndCoworkingId(adminUser.getId(), coworking.getId())
+                .map(existingAccess -> {
+                    existingAccess.setRole(AdminCoworkingRole.COWORKING_ADMIN);
+                    existingAccess.setActive(true);
+                    existingAccess.setUpdatedAt(LocalDateTime.now());
+                    return accessRepository.save(existingAccess);
+                })
                 .orElseGet(() -> accessRepository.save(AdminCoworkingAccess.builder()
                         .adminUser(adminUser)
                         .coworking(coworking)
-                        .role(AdminCoworkingRole.OWNER)
+                        .role(AdminCoworkingRole.COWORKING_ADMIN)
                         .active(true)
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())

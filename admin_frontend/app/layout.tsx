@@ -1,4 +1,3 @@
-import ServiceWorkerRegistration from './components/sw-register';
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 
@@ -7,7 +6,7 @@ export const metadata: Metadata = {
     default: 'Coworking Admin',
     template: '%s | Coworking Admin',
   },
-  description: 'Admin panel shell for coworking management.',
+  description: 'Admin panel for coworking management.',
   applicationName: 'Coworking Admin',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
@@ -28,14 +27,10 @@ export const viewport: Viewport = {
   themeColor: '#000000',
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ru">
-      <body><ServiceWorkerRegistration />{children}</body>
+    <html lang="en">
+      <body>{children}</body>
     </html>
   );
 }

@@ -14,5 +14,6 @@ public interface AdminCoworkingAccessRepository extends JpaRepository<AdminCowor
 
     boolean existsByAdminUserIdAndCoworkingIdAndActiveTrueAndCoworkingArchivedFalse(Long adminUserId, Long coworkingId);
 
+    @EntityGraph(attributePaths = {"coworking", "adminUser"})
     Optional<AdminCoworkingAccess> findByAdminUserIdAndCoworkingId(Long adminUserId, Long coworkingId);
 }

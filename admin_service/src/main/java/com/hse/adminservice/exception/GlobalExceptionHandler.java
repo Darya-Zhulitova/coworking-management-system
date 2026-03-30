@@ -1,8 +1,8 @@
 package com.hse.adminservice.exception;
 
+import com.hse.adminservice.authorization.AccessDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -36,8 +36,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiError> handleAccessDenied() {
-        return build(HttpStatus.FORBIDDEN, "Access denied");
+    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

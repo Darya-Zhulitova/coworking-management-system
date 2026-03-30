@@ -1,5 +1,7 @@
 package com.hse.adminservice.service;
 
+import com.hse.adminservice.authorization.AdminAuthorizationService;
+import com.hse.adminservice.authorization.EffectiveAdminAction;
 import com.hse.adminservice.dto.PlaceCreateRequest;
 import com.hse.adminservice.dto.PlaceResponse;
 import com.hse.adminservice.dto.PlaceUpdateRequest;
@@ -21,12 +23,11 @@ public class PlaceServiceImpl implements PlaceService {
 
     private final PlaceRepository placeRepository;
     private final CoworkingRepository coworkingRepository;
-    private final CurrentAdminService currentAdminService;
-    private final AdminCoworkingAccessService accessService;
+    private final AdminAuthorizationService authorizationService;
 
     @Override
     public PlaceResponse create(Long coworkingId, PlaceCreateRequest request) {
-        accessService.requireAccess(currentAdminService.getCurrentAdmin().getId(), coworkingId);
+        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.UPDATE_COWORKING);
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 
@@ -52,13 +53,13 @@ public class PlaceServiceImpl implements PlaceService {
 
     @Override
     public List<PlaceResponse> getAll(Long coworkingId) {
-        accessService.requireAccess(currentAdminService.getCurrentAdmin().getId(), coworkingId);
+        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.VIEW_COWORKING);
         return placeRepository.findAllByCoworkingIdAndArchivedFalse(coworkingId).stream().map(this::map).toList();
     }
 
     @Override
     public PlaceResponse getById(Long coworkingId, Long placeId) {
-        accessService.requireAccess(currentAdminService.getCurrentAdmin().getId(), coworkingId);
+        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.VIEW_COWORKING);
         Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Place not found"));
 
@@ -67,7 +68,7 @@ public class PlaceServiceImpl implements PlaceService {
 
     @Override
     public PlaceResponse update(Long coworkingId, Long placeId, PlaceUpdateRequest request) {
-        accessService.requireAccess(currentAdminService.getCurrentAdmin().getId(), coworkingId);
+        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.UPDATE_COWORKING);
         Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Place not found"));
 
@@ -94,7 +95,7 @@ public class PlaceServiceImpl implements PlaceService {
 
     @Override
     public void archive(Long coworkingId, Long placeId) {
-        accessService.requireAccess(currentAdminService.getCurrentAdmin().getId(), coworkingId);
+        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.UPDATE_COWORKING);
         Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Place not found"));
 
