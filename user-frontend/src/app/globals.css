@@ -128,3 +128,103 @@ a:hover {
     margin: 10px 0 0;
     color: #b42318;
 }
+
+.compact-text {
+    margin: 6px 0 0;
+}
+
+.balance-layout {
+    display: grid;
+    gap: 16px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.stat-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 14px;
+    background: #fafafa;
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 22px;
+    line-height: 1.2;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    text-align: left;
+    padding: 10px 8px;
+    border-top: 1px solid #e5e7eb;
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+.table th {
+    font-size: 13px;
+}
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    background: #f6f6f6;
+}
+
+.status-pending {
+    background: #fff7ed;
+    border-color: #fdba74;
+}
+
+.status-completed {
+    background: #ecfdf3;
+    border-color: #86efac;
+}
+
+.status-rejected {
+    background: #fef2f2;
+    border-color: #fca5a5;
+}
+
+.amount-positive {
+    color: #0f5132;
+    font-weight: bold;
+}
+
+.amount-negative {
+    color: #b42318;
+    font-weight: bold;
+}

@@ -1,6 +1,9 @@
 import type {
+  BalanceOverview,
+  CreateFinanceRequestPayload,
   CreateMembershipPayload,
   CreateServiceRequestPayload,
+  FinanceRequest,
   Membership,
   ServiceRequest,
 } from "./types";
@@ -44,6 +47,46 @@ export function createServiceRequest(
   payload: CreateServiceRequestPayload
 ): Promise<ServiceRequest> {
   return request("/api/service-requests", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+
+async function localRequest<T>(path: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options?.headers || {}),
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Request failed with status ${response.status}`;
+
+    try {
+      const errorData = await response.json();
+      if (errorData?.message) {
+        message = errorData.message;
+      }
+    } catch {
+    }
+
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export function getBalanceOverview(): Promise<BalanceOverview> {
+  return localRequest("/api/balance/overview");
+}
+
+export function createFinanceRequest(
+  payload: CreateFinanceRequestPayload
+): Promise<FinanceRequest> {
+  return localRequest("/api/balance/finance-requests", {
     method: "POST",
     body: JSON.stringify(payload),
   });
