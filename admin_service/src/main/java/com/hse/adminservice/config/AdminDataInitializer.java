@@ -24,6 +24,9 @@ public class AdminDataInitializer {
     private static final String DEFAULT_COWORKING_NAME = "Default Coworking";
     private static final String DEFAULT_SUPERADMIN_EMAIL = "superadmin@test.test";
     private static final String DEFAULT_SUPERADMIN_PASSWORD = "pass";
+    private static final String SECOND_OWNER_EMAIL = "manager@test.test";
+    private static final String SECOND_OWNER_PASSWORD = "pass";
+    private static final String SECOND_COWORKING_NAME = "Second Coworking";
 
     private final PasswordEncoder passwordEncoder;
     private final AdminCoworkingAccessService accessService;
@@ -59,8 +62,20 @@ public class AdminDataInitializer {
                             .updatedAt(now)
                             .build()));
 
+            AdminUser secondAdminUser = adminUserRepository.findByEmailAndArchivedFalse(SECOND_OWNER_EMAIL)
+                    .orElseGet(() -> adminUserRepository.save(AdminUser.builder()
+                            .email(SECOND_OWNER_EMAIL)
+                            .passwordHash(passwordEncoder.encode(SECOND_OWNER_PASSWORD))
+                            .active(true)
+                            .archived(false)
+                            .archivedAt(null)
+                            .createdAt(now)
+                            .updatedAt(now)
+                            .build()));
+
             Coworking coworking = coworkingRepository.findAllByArchivedFalse()
                     .stream()
+                    .filter(existing -> DEFAULT_COWORKING_NAME.equals(existing.getName()))
                     .findFirst()
                     .orElseGet(() -> coworkingRepository.save(Coworking.builder()
                             .name(DEFAULT_COWORKING_NAME)
@@ -71,7 +86,21 @@ public class AdminDataInitializer {
                             .updatedAt(now)
                             .build()));
 
+            Coworking secondCoworking = coworkingRepository.findAllByArchivedFalse()
+                    .stream()
+                    .filter(existing -> SECOND_COWORKING_NAME.equals(existing.getName()))
+                    .findFirst()
+                    .orElseGet(() -> coworkingRepository.save(Coworking.builder()
+                            .name(SECOND_COWORKING_NAME)
+                            .active(true)
+                            .archived(false)
+                            .archivedAt(null)
+                            .createdAt(now)
+                            .updatedAt(now)
+                            .build()));
+
             accessService.grantOwnerAccess(adminUser, coworking);
+            accessService.grantOwnerAccess(secondAdminUser, secondCoworking);
         };
     }
 }

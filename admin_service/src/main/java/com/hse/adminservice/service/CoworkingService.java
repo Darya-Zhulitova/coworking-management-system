@@ -1,6 +1,7 @@
 package com.hse.adminservice.service;
 
 import com.hse.adminservice.dto.CoworkingCreateRequest;
+import com.hse.adminservice.dto.CoworkingDashboardResponse;
 import com.hse.adminservice.dto.CoworkingResponse;
 import com.hse.adminservice.dto.CoworkingUpdateRequest;
 
@@ -17,4 +18,8 @@ public interface CoworkingService {
     CoworkingResponse update(Long id, CoworkingUpdateRequest request);
 
     void archive(Long id);
+
+    CoworkingDashboardResponse getDashboard(Long id);
+
+    List<CoworkingResponse> getArchived();
 }

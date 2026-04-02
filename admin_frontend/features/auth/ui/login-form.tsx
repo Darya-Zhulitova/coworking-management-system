@@ -2,6 +2,13 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Alert from 'react-bootstrap/Alert';
+import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
+import Col from 'react-bootstrap/Col';
+import Container from 'react-bootstrap/Container';
+import Form from 'react-bootstrap/Form';
+import Row from 'react-bootstrap/Row';
 
 interface LoginState {
   email: string;
@@ -39,41 +46,49 @@ export function LoginForm() {
   }
 
   return (
-    <section className="auth-card">
-      <h1>Admin Login</h1>
-      <p className="auth-subtitle">Sign in with an administrator account.</p>
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <label className="field">
-          <span>Email</span>
-          <input
-            autoComplete="email"
-            className="input"
-            name="email"
-            onChange={(event) => setFormState((state) => ({ ...state, email: event.target.value }))}
-            placeholder="admin@test.test"
-            required
-            type="email"
-            value={formState.email}
-          />
-        </label>
-        <label className="field">
-          <span>Password</span>
-          <input
-            autoComplete="current-password"
-            className="input"
-            name="password"
-            onChange={(event) => setFormState((state) => ({ ...state, password: event.target.value }))}
-            placeholder="Enter password"
-            required
-            type="password"
-            value={formState.password}
-          />
-        </label>
-        {errorMessage ? <p className="error-text">{errorMessage}</p> : null}
-        <button className="primary-button" disabled={isSubmitting} type="submit">
-          {isSubmitting ? 'Signing in...' : 'Sign in'}
-        </button>
-      </form>
-    </section>
+    <main className="auth-shell d-flex align-items-center">
+      <Container className="py-5">
+        <Row className="justify-content-center">
+          <Col md={8} lg={5}>
+            <Card className="auth-card">
+              <Card.Body className="p-4 p-lg-5">
+                <Card.Title as="h1" className="mb-2">Admin Login</Card.Title>
+                <Card.Text className="text-body-secondary mb-4">Sign in with an administrator account.</Card.Text>
+                <Form onSubmit={handleSubmit}>
+                  <Form.Group className="mb-3" controlId="email">
+                    <Form.Label>Email</Form.Label>
+                    <Form.Control
+                      autoComplete="email"
+                      name="email"
+                      onChange={(event) => setFormState((state) => ({ ...state, email: event.target.value }))}
+                      placeholder="admin@test.test"
+                      required
+                      type="email"
+                      value={formState.email}
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-3" controlId="password">
+                    <Form.Label>Password</Form.Label>
+                    <Form.Control
+                      autoComplete="current-password"
+                      name="password"
+                      onChange={(event) => setFormState((state) => ({ ...state, password: event.target.value }))}
+                      placeholder="Enter password"
+                      required
+                      type="password"
+                      value={formState.password}
+                    />
+                  </Form.Group>
+                  {errorMessage ? <Alert variant="danger">{errorMessage}</Alert> : null}
+                  <Button className="w-100" disabled={isSubmitting} type="submit">
+                    {isSubmitting ? 'Signing in...' : 'Sign in'}
+                  </Button>
+                </Form>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
+    </main>
   );
 }

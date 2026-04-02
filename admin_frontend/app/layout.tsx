@@ -1,5 +1,7 @@
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
+import { ServiceWorkerRegistration } from '@/components/service-worker-registration';
 
 export const metadata: Metadata = {
   title: {
@@ -24,13 +26,16 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#000000',
+  themeColor: '#0d6efd',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="app-body">
+        <ServiceWorkerRegistration />
+        {children}
+      </body>
     </html>
   );
 }

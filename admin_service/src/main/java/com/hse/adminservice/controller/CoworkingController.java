@@ -1,6 +1,7 @@
 package com.hse.adminservice.controller;
 
 import com.hse.adminservice.dto.CoworkingCreateRequest;
+import com.hse.adminservice.dto.CoworkingDashboardResponse;
 import com.hse.adminservice.dto.CoworkingResponse;
 import com.hse.adminservice.dto.CoworkingUpdateRequest;
 import com.hse.adminservice.service.CoworkingService;
@@ -25,13 +26,18 @@ public class CoworkingController {
     }
 
     @GetMapping
-    public List<CoworkingResponse> getAll() {
-        return coworkingService.getAll();
+    public List<CoworkingResponse> getAll(@RequestParam(name = "archived", defaultValue = "false") boolean archived) {
+        return archived ? coworkingService.getArchived() : coworkingService.getAll();
     }
 
     @GetMapping("/{id}")
     public CoworkingResponse getById(@PathVariable Long id) {
         return coworkingService.getById(id);
+    }
+
+    @GetMapping("/{id}/dashboard")
+    public CoworkingDashboardResponse getDashboard(@PathVariable Long id) {
+        return coworkingService.getDashboard(id);
     }
 
     @PutMapping("/{id}")

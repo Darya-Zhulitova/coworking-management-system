@@ -3,6 +3,7 @@ package com.hse.adminservice.service;
 import com.hse.adminservice.authorization.AdminAuthorizationService;
 import com.hse.adminservice.authorization.EffectiveAdminAction;
 import com.hse.adminservice.dto.CoworkingCreateRequest;
+import com.hse.adminservice.dto.CoworkingDashboardResponse;
 import com.hse.adminservice.dto.CoworkingResponse;
 import com.hse.adminservice.dto.CoworkingUpdateRequest;
 import com.hse.adminservice.entity.Coworking;
@@ -54,7 +55,11 @@ public class CoworkingServiceImpl implements CoworkingService {
 
         authorizationService.requireGlobalAction(EffectiveAdminAction.VIEW_ACCESSIBLE_COWORKINGS);
         Long adminUserId = currentAdminService.getCurrentAdmin().getId();
-        return accessService.getAccessibleCoworkings(adminUserId).stream().map(access -> getById(access.id())).toList();
+        return accessService.getAccessibleCoworkings(adminUserId).stream()
+                .map(access -> coworkingRepository.findByIdAndArchivedFalse(access.id()).orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .map(this::mapToResponse)
+                .toList();
     }
 
     @Override
@@ -93,6 +98,29 @@ public class CoworkingServiceImpl implements CoworkingService {
         coworking.setUpdatedAt(LocalDateTime.now());
 
         coworkingRepository.save(coworking);
+    }
+
+    @Override
+    public CoworkingDashboardResponse getDashboard(Long id) {
+        var context = authorizationService.requireCoworkingAction(id, EffectiveAdminAction.VIEW_TENANT_DASHBOARD);
+        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+
+        String subjectLabel = context.principalType().name() + "#" + (context.principalType().name().equals("SUPERADMIN")
+                ? context.superAdminId()
+                : context.tenantAdminUserId());
+
+        return CoworkingDashboardResponse.builder()
+                .coworking(mapToResponse(coworking))
+                .grantedActions(context.grantedActions())
+                .subjectLabel(subjectLabel)
+                .build();
+    }
+
+    @Override
+    public List<CoworkingResponse> getArchived() {
+        authorizationService.requireGlobalAction(EffectiveAdminAction.VIEW_ALL_COWORKINGS);
+        return coworkingRepository.findAllByArchivedTrue().stream().map(this::mapToResponse).toList();
     }
 
     private CoworkingResponse mapToResponse(Coworking coworking) {

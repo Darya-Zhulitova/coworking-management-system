@@ -107,3 +107,7 @@ export async function clearAdminSession(): Promise<void> {
     cookieStore.delete(cookieName);
   }
 }
+
+export function hasGlobalAction(session: AdminSession, action: string): boolean {
+  return session.grantedGlobalActions.includes(action);
+}

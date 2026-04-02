@@ -12,6 +12,8 @@ public interface CoworkingRepository extends JpaRepository<Coworking, Long> {
 
     List<Coworking> findAllByActiveTrueAndArchivedFalse();
 
+    List<Coworking> findAllByArchivedTrue();
+
     Optional<Coworking> findByIdAndArchivedFalse(Long id);
 
     boolean existsByIdAndArchivedFalse(Long id);
