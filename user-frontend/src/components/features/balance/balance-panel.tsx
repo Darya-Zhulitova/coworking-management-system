@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useState} from "react";
 import {createFinanceRequest, getBalanceOverview} from "@/lib/api";
-import type {BalanceOverview, CreateFinanceRequestPayload, FinanceRequestType,} from "@/lib/types";
+import type {BalanceOverview, CreateFinanceRequestPayload, FinanceRequestType} from "@/lib/types";
 
 const initialForm: CreateFinanceRequestPayload = {
   membershipId: 1,
@@ -44,6 +44,18 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function getStatusBadgeClass(status: string) {
+  if (status === "COMPLETED") {
+    return "text-bg-success";
+  }
+
+  if (status === "REJECTED") {
+    return "text-bg-danger";
+  }
+
+  return "text-bg-warning";
+}
+
 export function BalancePanel() {
   const [overview, setOverview] = useState<BalanceOverview | null>(null);
   const [form, setForm] = useState<CreateFinanceRequestPayload>(initialForm);
@@ -69,7 +81,7 @@ export function BalancePanel() {
     try {
       const data = await getBalanceOverview();
       setOverview(data);
-    } catch (e) {
+    } catch {
       setError("Не удалось загрузить баланс.");
     } finally {
       setLoading(false);
@@ -107,213 +119,233 @@ export function BalancePanel() {
       );
       setForm(initialForm);
       await loadOverview();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Не удалось создать финансовый запрос.");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Не удалось создать финансовый запрос.");
     } finally {
       setSubmitting(false);
     }
   }
 
   useEffect(() => {
-    loadOverview();
+    void loadOverview();
   }, []);
 
   return (
-    <div className="balance-layout">
-      <section className="panel">
-        <div className="section-header">
-          <div>
-            <h3>Состояние счета</h3>
+    <div className="d-grid gap-4">
+      <section className="card shadow-sm border-0">
+        <div className="card-body p-4">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+              <h3 className="h5 mb-1">Состояние счета</h3>
+              <p className="text-body-secondary mb-0">Актуальный баланс, доступный остаток и статус заявок.</p>
+            </div>
+            <button className="btn btn-outline-primary" onClick={loadOverview} disabled={loading}>
+              {loading ? "Загрузка..." : "Обновить"}
+            </button>
           </div>
-          <button className="button" onClick={loadOverview} disabled={loading}>
-            {loading ? "Загрузка..." : "Обновить"}
-          </button>
-        </div>
 
-        {overview ? (
-          <div className="stats-grid">
-            <article className="stat-card">
-              <span className="stat-label">Текущий баланс</span>
-              <strong className="stat-value">{formatMoney(overview.account.balance)} ₽</strong>
-            </article>
-            <article className="stat-card">
-              <span className="stat-label">Доступно сейчас</span>
-              <strong className="stat-value">
-                {formatMoney(String(Number(overview.account.balance) - pendingWithdrawTotal))} ₽
-              </strong>
-            </article>
-            <article className="stat-card">
-              <span className="stat-label">Запросов в ожидании</span>
-              <strong className="stat-value">{overview.pendingCount}</strong>
-            </article>
-            <article className="stat-card">
-              <span className="stat-label">Membership</span>
-              <strong className="stat-value">#{overview.account.membershipId}</strong>
-            </article>
-          </div>
-        ) : (
-          <p className="muted">Нет данных по счету.</p>
-        )}
+          {overview ? (
+            <div className="row g-3">
+              <div className="col-sm-6 col-xl-3">
+                <article className="border rounded-3 p-3 h-100 bg-body-tertiary">
+                  <span className="d-block text-body-secondary small mb-2">Текущий баланс</span>
+                  <strong className="fs-4">{formatMoney(overview.account.balance)} ₽</strong>
+                </article>
+              </div>
+              <div className="col-sm-6 col-xl-3">
+                <article className="border rounded-3 p-3 h-100 bg-body-tertiary">
+                  <span className="d-block text-body-secondary small mb-2">Доступно сейчас</span>
+                  <strong className="fs-4">
+                    {formatMoney(String(Number(overview.account.balance) - pendingWithdrawTotal))} ₽
+                  </strong>
+                </article>
+              </div>
+              <div className="col-sm-6 col-xl-3">
+                <article className="border rounded-3 p-3 h-100 bg-body-tertiary">
+                  <span className="d-block text-body-secondary small mb-2">Запросов в ожидании</span>
+                  <strong className="fs-4">{overview.pendingCount}</strong>
+                </article>
+              </div>
+              <div className="col-sm-6 col-xl-3">
+                <article className="border rounded-3 p-3 h-100 bg-body-tertiary">
+                  <span className="d-block text-body-secondary small mb-2">Membership</span>
+                  <strong className="fs-4">#{overview.account.membershipId}</strong>
+                </article>
+              </div>
+            </div>
+          ) : (
+            <p className="text-body-secondary mb-0">Нет данных по счету.</p>
+          )}
 
-        {message ? <p className="message">{message}</p> : null}
-        {error ? <p className="error">{error}</p> : null}
-      </section>
-
-      <section className="panel">
-        <h3>Создать финансовый запрос</h3>
-
-        <div className="row">
-          <label className="label" htmlFor="membershipId-balance">
-            Membership ID
-          </label>
-          <input
-            id="membershipId-balance"
-            className="input"
-            value={String(form.membershipId)}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                membershipId: Number(event.target.value) || 0,
-              })
-            }
-          />
-        </div>
-
-        <div className="row">
-          <label className="label" htmlFor="requestType">
-            Тип запроса
-          </label>
-          <select
-            id="requestType"
-            className="select"
-            value={form.type}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                type: event.target.value as FinanceRequestType,
-              })
-            }
-          >
-            <option value="DEPOSIT">Пополнение</option>
-            <option value="WITHDRAW">Вывод</option>
-          </select>
-        </div>
-
-        <div className="row">
-          <label className="label" htmlFor="amount">
-            Сумма
-          </label>
-          <input
-            id="amount"
-            className="input"
-            value={form.amount}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                amount: event.target.value,
-              })
-            }
-            placeholder="Например, 1500"
-          />
-        </div>
-
-        <div className="row">
-          <label className="label" htmlFor="comment">
-            Комментарий
-          </label>
-          <textarea
-            id="comment"
-            className="textarea"
-            value={form.comment}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                comment: event.target.value,
-              })
-            }
-            placeholder="Например, возврат остатка депозита"
-          />
-        </div>
-
-        <div className="button-row">
-          <button className="button" onClick={handleSubmit} disabled={submitting}>
-            {submitting ? "Создание..." : requestTypeLabels[form.type]}
-          </button>
+          {message ? <div className="alert alert-success mt-4 mb-0">{message}</div> : null}
+          {error ? <div className="alert alert-danger mt-4 mb-0">{error}</div> : null}
         </div>
       </section>
 
-      <section className="panel">
-        <h3>История финансовых запросов</h3>
+      <section className="card shadow-sm border-0">
+        <div className="card-body p-4">
+          <h3 className="h5 mb-4">Создать финансовый запрос</h3>
 
-        {!overview || overview.financeRequests.length === 0 ? (
-          <p className="muted">Пока нет запросов.</p>
-        ) : (
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-              <tr>
-                <th>ID</th>
-                <th>Тип</th>
-                <th>Сумма</th>
-                <th>Статус</th>
-                <th>Комментарий</th>
-                <th>Создан</th>
-              </tr>
-              </thead>
-              <tbody>
-              {overview.financeRequests.map((request) => (
-                <tr key={request.id}>
-                  <td>{request.id}</td>
-                  <td>{requestTypeLabels[request.type]}</td>
-                  <td>{formatMoney(request.amount)} ₽</td>
-                  <td>
-                      <span className={`status-chip status-${request.status.toLowerCase()}`}>
-                        {requestStatusLabels[request.status] ?? request.status}
-                      </span>
-                  </td>
-                  <td>{request.comment || "—"}</td>
-                  <td>{formatDate(request.createdAt)}</td>
-                </tr>
-              ))}
-              </tbody>
-            </table>
+          <div className="row g-3">
+            <div className="col-md-4">
+              <label className="form-label" htmlFor="membershipId-balance">
+                Membership ID
+              </label>
+              <input
+                id="membershipId-balance"
+                className="form-control"
+                value={String(form.membershipId)}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    membershipId: Number(event.target.value) || 0,
+                  })
+                }
+              />
+            </div>
+
+            <div className="col-md-4">
+              <label className="form-label" htmlFor="requestType">
+                Тип запроса
+              </label>
+              <select
+                id="requestType"
+                className="form-select"
+                value={form.type}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    type: event.target.value as FinanceRequestType,
+                  })
+                }
+              >
+                <option value="DEPOSIT">Пополнение</option>
+                <option value="WITHDRAW">Вывод</option>
+              </select>
+            </div>
+
+            <div className="col-md-4">
+              <label className="form-label" htmlFor="amount">
+                Сумма
+              </label>
+              <input
+                id="amount"
+                className="form-control"
+                value={form.amount}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    amount: event.target.value,
+                  })
+                }
+                placeholder="Например, 1500"
+              />
+            </div>
+
+            <div className="col-12">
+              <label className="form-label" htmlFor="comment">
+                Комментарий
+              </label>
+              <textarea
+                id="comment"
+                className="form-control"
+                rows={4}
+                value={form.comment}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    comment: event.target.value,
+                  })
+                }
+                placeholder="Например, возврат остатка депозита"
+              />
+            </div>
           </div>
-        )}
+
+          <div className="d-flex flex-wrap gap-2 mt-4">
+            <button className="btn btn-primary" onClick={handleSubmit} disabled={submitting}>
+              {submitting ? "Создание..." : requestTypeLabels[form.type]}
+            </button>
+          </div>
+        </div>
       </section>
 
-      <section className="panel">
-        <h3>История операций по счету</h3>
+      <section className="card shadow-sm border-0">
+        <div className="card-body p-4">
+          <h3 className="h5 mb-4">История финансовых запросов</h3>
 
-        {!overview || overview.transactions.length === 0 ? (
-          <p className="muted">Пока нет операций.</p>
-        ) : (
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-              <tr>
-                <th>ID</th>
-                <th>Операция</th>
-                <th>Сумма</th>
-                <th>Описание</th>
-                <th>Дата</th>
-              </tr>
-              </thead>
-              <tbody>
-              {overview.transactions.map((transaction) => (
-                <tr key={transaction.id}>
-                  <td>{transaction.id}</td>
-                  <td>{transactionTypeLabels[transaction.type] ?? transaction.type}</td>
-                  <td className={Number(transaction.amount) < 0 ? "amount-negative" : "amount-positive"}>
-                    {formatMoney(transaction.amount)} ₽
-                  </td>
-                  <td>{transaction.description}</td>
-                  <td>{formatDate(transaction.createdAt)}</td>
-                </tr>
-              ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+          {!overview || overview.financeRequests.length === 0 ? (
+            <p className="text-body-secondary mb-0">Пока нет запросов.</p>
+          ) : (
+            <div className="table-responsive">
+              <table className="table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Тип</th>
+                    <th>Сумма</th>
+                    <th>Статус</th>
+                    <th>Комментарий</th>
+                    <th>Создан</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {overview.financeRequests.map((request) => (
+                    <tr key={request.id}>
+                      <td>{request.id}</td>
+                      <td>{requestTypeLabels[request.type]}</td>
+                      <td>{formatMoney(request.amount)} ₽</td>
+                      <td>
+                        <span className={`badge ${getStatusBadgeClass(request.status)}`}>
+                          {requestStatusLabels[request.status] ?? request.status}
+                        </span>
+                      </td>
+                      <td>{request.comment || "—"}</td>
+                      <td>{formatDate(request.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="card shadow-sm border-0">
+        <div className="card-body p-4">
+          <h3 className="h5 mb-4">История операций по счету</h3>
+
+          {!overview || overview.transactions.length === 0 ? (
+            <p className="text-body-secondary mb-0">Пока нет операций.</p>
+          ) : (
+            <div className="table-responsive">
+              <table className="table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Операция</th>
+                    <th>Сумма</th>
+                    <th>Описание</th>
+                    <th>Дата</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {overview.transactions.map((transaction) => (
+                    <tr key={transaction.id}>
+                      <td>{transaction.id}</td>
+                      <td>{transactionTypeLabels[transaction.type] ?? transaction.type}</td>
+                      <td className={Number(transaction.amount) < 0 ? "text-danger fw-semibold" : "text-success fw-semibold"}>
+                        {formatMoney(transaction.amount)} ₽
+                      </td>
+                      <td>{transaction.description}</td>
+                      <td>{formatDate(transaction.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );

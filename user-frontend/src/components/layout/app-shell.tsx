@@ -7,9 +7,9 @@ type AppShellProps = {
 
 export function AppShell({children}: AppShellProps) {
   return (
-    <div>
+    <div className="min-vh-100 bg-body-secondary">
       <AppHeader/>
-      <main className="page">{children}</main>
+      <main className="container py-4">{children}</main>
     </div>
   );
 }
