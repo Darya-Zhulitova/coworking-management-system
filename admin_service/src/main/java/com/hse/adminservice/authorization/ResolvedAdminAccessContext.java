@@ -1,5 +1,6 @@
 package com.hse.adminservice.authorization;
 
+import com.hse.adminservice.entity.AdminCoworkingAssignmentType;
 import com.hse.adminservice.entity.AdminCoworkingRole;
 import com.hse.adminservice.entity.AdminPrincipalType;
 import lombok.Builder;
@@ -12,7 +13,9 @@ public record ResolvedAdminAccessContext(
         Long tenantAdminUserId,
         Long superAdminId,
         Long coworkingId,
+        AdminCoworkingAssignmentType assignmentType,
         AdminCoworkingRole coworkingRole,
+        Set<TenantPermission> tenantPermissions,
         Set<EffectiveAdminAction> grantedActions
 ) {
     public boolean hasAction(EffectiveAdminAction action) {

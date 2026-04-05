@@ -32,6 +32,10 @@ public class AdminCoworkingAccess {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    private AdminCoworkingAssignmentType assignmentType;
+
+    @Enumerated(EnumType.STRING)
+    @Column
     private AdminCoworkingRole role;
 
     @Column(nullable = false)

@@ -5,6 +5,7 @@ import com.hse.adminservice.entity.AdminPrincipalType;
 import com.hse.adminservice.exception.ResourceNotFoundException;
 import com.hse.adminservice.repository.AdminCoworkingAccessRepository;
 import com.hse.adminservice.repository.CoworkingRepository;
+import com.hse.adminservice.service.AdminCoworkingAccessService;
 import com.hse.adminservice.service.AuthenticatedAdminActorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class AdminAuthorizationService {
     private final AuthenticatedAdminActorService authenticatedAdminActorService;
     private final AdminCoworkingAccessRepository adminCoworkingAccessRepository;
     private final CoworkingRepository coworkingRepository;
+    private final AdminCoworkingAccessService accessService;
 
     public ResolvedAdminAccessContext requireGlobalAction(EffectiveAdminAction action) {
         ResolvedAdminAccessContext context = resolveForGlobalScope();
@@ -37,6 +39,7 @@ public class AdminAuthorizationService {
             return ResolvedAdminAccessContext.builder()
                     .principalType(AdminPrincipalType.SUPERADMIN)
                     .superAdminId(authenticatedAdminActorService.getSubjectId())
+                    .tenantPermissions(EnumSet.noneOf(TenantPermission.class))
                     .grantedActions(EnumSet.of(
                             EffectiveAdminAction.VIEW_ALL_COWORKINGS,
                             EffectiveAdminAction.VIEW_COWORKING,
@@ -44,7 +47,11 @@ public class AdminAuthorizationService {
                             EffectiveAdminAction.UPDATE_COWORKING,
                             EffectiveAdminAction.ARCHIVE_COWORKING,
                             EffectiveAdminAction.VIEW_TENANT_DASHBOARD,
-                            EffectiveAdminAction.VIEW_ACCESSIBLE_COWORKINGS
+                            EffectiveAdminAction.VIEW_ACCESSIBLE_COWORKINGS,
+                            EffectiveAdminAction.VIEW_STAFF_ACCESS,
+                            EffectiveAdminAction.MANAGE_STAFF_ACCESS,
+                            EffectiveAdminAction.VIEW_PLACES,
+                            EffectiveAdminAction.MANAGE_PLACES
                     ))
                     .build();
         }
@@ -52,6 +59,7 @@ public class AdminAuthorizationService {
         return ResolvedAdminAccessContext.builder()
                 .principalType(AdminPrincipalType.TENANT_ADMIN)
                 .tenantAdminUserId(authenticatedAdminActorService.getSubjectId())
+                .tenantPermissions(EnumSet.noneOf(TenantPermission.class))
                 .grantedActions(EnumSet.of(
                         EffectiveAdminAction.VIEW_ACCESSIBLE_COWORKINGS,
                         EffectiveAdminAction.CREATE_COWORKING
@@ -69,13 +77,18 @@ public class AdminAuthorizationService {
                     .principalType(AdminPrincipalType.SUPERADMIN)
                     .superAdminId(authenticatedAdminActorService.getSubjectId())
                     .coworkingId(coworkingId)
+                    .tenantPermissions(EnumSet.allOf(TenantPermission.class))
                     .grantedActions(EnumSet.of(
                             EffectiveAdminAction.VIEW_COWORKING,
                             EffectiveAdminAction.UPDATE_COWORKING,
                             EffectiveAdminAction.ARCHIVE_COWORKING,
                             EffectiveAdminAction.VIEW_TENANT_DASHBOARD,
                             EffectiveAdminAction.VIEW_ALL_COWORKINGS,
-                            EffectiveAdminAction.VIEW_ACCESSIBLE_COWORKINGS
+                            EffectiveAdminAction.VIEW_ACCESSIBLE_COWORKINGS,
+                            EffectiveAdminAction.VIEW_STAFF_ACCESS,
+                            EffectiveAdminAction.MANAGE_STAFF_ACCESS,
+                            EffectiveAdminAction.VIEW_PLACES,
+                            EffectiveAdminAction.MANAGE_PLACES
                     ))
                     .build();
         }
@@ -93,14 +106,10 @@ public class AdminAuthorizationService {
                 .principalType(AdminPrincipalType.TENANT_ADMIN)
                 .tenantAdminUserId(access.getAdminUser().getId())
                 .coworkingId(access.getCoworking().getId())
+                .assignmentType(access.getAssignmentType())
                 .coworkingRole(access.getRole())
-                .grantedActions(EnumSet.of(
-                        EffectiveAdminAction.VIEW_ACCESSIBLE_COWORKINGS,
-                        EffectiveAdminAction.VIEW_COWORKING,
-                        EffectiveAdminAction.UPDATE_COWORKING,
-                        EffectiveAdminAction.ARCHIVE_COWORKING,
-                        EffectiveAdminAction.VIEW_TENANT_DASHBOARD
-                ))
+                .tenantPermissions(accessService.resolvePermissions(access))
+                .grantedActions(accessService.resolveGrantedActions(access))
                 .build();
     }
 

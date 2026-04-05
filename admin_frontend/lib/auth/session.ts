@@ -42,7 +42,11 @@ function parseCoworkings(value: string | undefined): AccessibleCoworking[] {
     return parsedValue.filter((item): item is AccessibleCoworking => {
       if (!item || typeof item !== 'object') return false;
       const maybeCoworking = item as Partial<AccessibleCoworking>;
-      return typeof maybeCoworking.id === 'number' && typeof maybeCoworking.name === 'string' && typeof maybeCoworking.role === 'string';
+      return typeof maybeCoworking.id === 'number'
+        && typeof maybeCoworking.name === 'string'
+        && (maybeCoworking.assignmentType === 'OWNER' || maybeCoworking.assignmentType === 'ROLE_ASSIGNED')
+        && (maybeCoworking.role === 'MANAGER' || maybeCoworking.role === 'STAFF_SUPPORT' || maybeCoworking.role == null)
+        && typeof maybeCoworking.owner === 'boolean';
     });
   } catch {
     return [];

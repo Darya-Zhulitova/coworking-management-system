@@ -1,7 +1,9 @@
 export interface AccessibleCoworking {
   id: number;
   name: string;
-  role: string;
+  assignmentType: 'OWNER' | 'ROLE_ASSIGNED';
+  role: 'MANAGER' | 'STAFF_SUPPORT' | null;
+  owner: boolean;
 }
 
 export type AdminPrincipalType = 'TENANT_ADMIN' | 'SUPERADMIN';

@@ -8,4 +8,6 @@ import java.util.Optional;
 public interface AdminUserRepository extends JpaRepository<AdminUser, Long> {
 
     Optional<AdminUser> findByEmailAndArchivedFalse(String email);
+
+    Optional<AdminUser> findByEmailIgnoreCaseAndArchivedFalse(String email);
 }

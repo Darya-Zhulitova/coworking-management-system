@@ -61,7 +61,11 @@ public class AuthServiceImpl implements AuthService {
                     EffectiveAdminAction.UPDATE_COWORKING,
                     EffectiveAdminAction.ARCHIVE_COWORKING,
                     EffectiveAdminAction.VIEW_TENANT_DASHBOARD,
-                    EffectiveAdminAction.VIEW_ACCESSIBLE_COWORKINGS
+                    EffectiveAdminAction.VIEW_ACCESSIBLE_COWORKINGS,
+                    EffectiveAdminAction.VIEW_STAFF_ACCESS,
+                    EffectiveAdminAction.MANAGE_STAFF_ACCESS,
+                    EffectiveAdminAction.VIEW_PLACES,
+                    EffectiveAdminAction.MANAGE_PLACES
             );
         }
 

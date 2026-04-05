@@ -9,25 +9,30 @@ import com.hse.adminservice.entity.Coworking;
 import com.hse.adminservice.entity.Place;
 import com.hse.adminservice.exception.ConflictException;
 import com.hse.adminservice.exception.ResourceNotFoundException;
+import com.hse.adminservice.mapper.PlaceMapper;
 import com.hse.adminservice.repository.CoworkingRepository;
 import com.hse.adminservice.repository.PlaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PlaceServiceImpl implements PlaceService {
 
     private final PlaceRepository placeRepository;
     private final CoworkingRepository coworkingRepository;
     private final AdminAuthorizationService authorizationService;
+    private final PlaceMapper placeMapper;
 
     @Override
+    @Transactional
     public PlaceResponse create(Long coworkingId, PlaceCreateRequest request) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.UPDATE_COWORKING);
+        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.MANAGE_PLACES);
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 
@@ -48,27 +53,28 @@ public class PlaceServiceImpl implements PlaceService {
                 .updatedAt(now)
                 .build();
 
-        return map(placeRepository.save(place));
+        return placeMapper.toResponse(placeRepository.save(place));
     }
 
     @Override
     public List<PlaceResponse> getAll(Long coworkingId) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.VIEW_COWORKING);
-        return placeRepository.findAllByCoworkingIdAndArchivedFalse(coworkingId).stream().map(this::map).toList();
+        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.VIEW_PLACES);
+        return placeRepository.findAllByCoworkingIdAndArchivedFalse(coworkingId).stream().map(placeMapper::toResponse).toList();
     }
 
     @Override
     public PlaceResponse getById(Long coworkingId, Long placeId) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.VIEW_COWORKING);
+        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.VIEW_PLACES);
         Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Place not found"));
 
-        return map(place);
+        return placeMapper.toResponse(place);
     }
 
     @Override
+    @Transactional
     public PlaceResponse update(Long coworkingId, Long placeId, PlaceUpdateRequest request) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.UPDATE_COWORKING);
+        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.MANAGE_PLACES);
         Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Place not found"));
 
@@ -90,12 +96,13 @@ public class PlaceServiceImpl implements PlaceService {
 
         place.setUpdatedAt(LocalDateTime.now());
 
-        return map(placeRepository.save(place));
+        return placeMapper.toResponse(placeRepository.save(place));
     }
 
     @Override
+    @Transactional
     public void archive(Long coworkingId, Long placeId) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.UPDATE_COWORKING);
+        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.MANAGE_PLACES);
         Place place = placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Place not found"));
 
@@ -105,19 +112,5 @@ public class PlaceServiceImpl implements PlaceService {
         place.setUpdatedAt(LocalDateTime.now());
 
         placeRepository.save(place);
-    }
-
-    private PlaceResponse map(Place place) {
-        return PlaceResponse.builder()
-                .id(place.getId())
-                .name(place.getName())
-                .type(place.getType())
-                .active(place.getActive())
-                .archived(place.getArchived())
-                .archivedAt(place.getArchivedAt())
-                .createdAt(place.getCreatedAt())
-                .updatedAt(place.getUpdatedAt())
-                .coworkingId(place.getCoworking().getId())
-                .build();
     }
 }

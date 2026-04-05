@@ -16,4 +16,10 @@ public interface AdminCoworkingAccessRepository extends JpaRepository<AdminCowor
 
     @EntityGraph(attributePaths = {"coworking", "adminUser"})
     Optional<AdminCoworkingAccess> findByAdminUserIdAndCoworkingId(Long adminUserId, Long coworkingId);
+
+    @EntityGraph(attributePaths = {"coworking", "adminUser"})
+    List<AdminCoworkingAccess> findAllByCoworkingIdAndCoworkingArchivedFalse(Long coworkingId);
+
+    @EntityGraph(attributePaths = {"coworking", "adminUser"})
+    Optional<AdminCoworkingAccess> findByIdAndCoworkingIdAndCoworkingArchivedFalse(Long id, Long coworkingId);
 }

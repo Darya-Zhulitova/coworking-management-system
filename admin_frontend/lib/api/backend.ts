@@ -3,6 +3,7 @@ import 'server-only';
 import { env } from '@/lib/config/env';
 import type { AdminLoginRequest, AdminLoginResponse } from '@/types/auth';
 import type { Coworking, CoworkingDashboard, CreateCoworkingRequest, UpdateCoworkingRequest } from '@/types/coworking';
+import type { AssignTenantRoleRequest, TenantRoleDefinition, TenantStaffMember, UpdateTenantRoleRequest } from '@/types/staff';
 
 export class BackendRequestError extends Error {
   constructor(message: string, public readonly status: number, public readonly details?: unknown) {
@@ -80,4 +81,32 @@ export async function updateCoworking(token: string, id: number, payload: Update
 
 export async function archiveCoworking(token: string, id: number): Promise<void> {
   await requestBackend<void>(`/coworkings/${id}`, { method: 'DELETE' }, token);
+}
+
+export async function getTenantStaff(token: string, coworkingId: number): Promise<TenantStaffMember[]> {
+  return requestBackend<TenantStaffMember[]>(`/coworkings/${coworkingId}/staff`, undefined, token);
+}
+
+export async function getTenantRoles(token: string, coworkingId: number): Promise<TenantRoleDefinition[]> {
+  return requestBackend<TenantRoleDefinition[]>(`/coworkings/${coworkingId}/staff/roles`, undefined, token);
+}
+
+export async function assignTenantRole(token: string, coworkingId: number, payload: AssignTenantRoleRequest): Promise<TenantStaffMember> {
+  return requestBackend<TenantStaffMember>(`/coworkings/${coworkingId}/staff`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function updateTenantRole(token: string, coworkingId: number, accessId: number, payload: UpdateTenantRoleRequest): Promise<TenantStaffMember> {
+  return requestBackend<TenantStaffMember>(`/coworkings/${coworkingId}/staff/${accessId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function deactivateTenantAccess(token: string, coworkingId: number, accessId: number): Promise<void> {
+  await requestBackend<void>(`/coworkings/${coworkingId}/staff/${accessId}`, { method: 'DELETE' }, token);
 }
