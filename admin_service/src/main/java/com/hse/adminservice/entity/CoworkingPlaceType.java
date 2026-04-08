@@ -6,29 +6,38 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "coworkings")
+@Table(name = "coworking_place_types", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"coworking_id", "code", "archived"}),
+        @UniqueConstraint(columnNames = {"coworking_id", "name", "archived"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Coworking {
+public class CoworkingPlaceType {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "coworking_id", nullable = false)
+    private Coworking coworking;
+
+    @Column(nullable = false)
+    private String code;
+
     @Column(nullable = false)
     private String name;
+
+    private String description;
 
     @Column(nullable = false)
     private Boolean active;
 
     @Column(nullable = false)
     private Boolean archived;
-
-    @Column(nullable = false)
-    private Long configurationVersion;
 
     private LocalDateTime archivedAt;
 

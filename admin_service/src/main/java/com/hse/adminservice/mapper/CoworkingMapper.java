@@ -13,6 +13,7 @@ public class CoworkingMapper {
                 .name(coworking.getName())
                 .active(coworking.getActive())
                 .archived(coworking.getArchived())
+                .configurationVersion(coworking.getConfigurationVersion())
                 .archivedAt(coworking.getArchivedAt())
                 .createdAt(coworking.getCreatedAt())
                 .updatedAt(coworking.getUpdatedAt())

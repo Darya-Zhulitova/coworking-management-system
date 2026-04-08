@@ -19,6 +19,9 @@ export function TenantNav({ coworkingId }: { coworkingId: number }) {
         <Nav.Link as={Link} href={`/coworkings/${coworkingId}`} active={pathname === `/coworkings/${coworkingId}`}>Tenant details</Nav.Link>
       </Nav.Item>
       <Nav.Item>
+        <Nav.Link as={Link} href={`/coworkings/${coworkingId}/places`} active={pathname === `/coworkings/${coworkingId}/places`}>Places</Nav.Link>
+      </Nav.Item>
+      <Nav.Item>
         <Nav.Link as={Link} href={`/coworkings/${coworkingId}/staff`} active={pathname === `/coworkings/${coworkingId}/staff`}>Staff access</Nav.Link>
       </Nav.Item>
     </Nav>

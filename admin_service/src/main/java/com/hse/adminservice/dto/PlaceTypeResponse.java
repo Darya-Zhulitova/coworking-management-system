@@ -7,12 +7,14 @@ import java.time.LocalDateTime;
 
 @Value
 @Builder
-public class CoworkingResponse {
+public class PlaceTypeResponse {
     Long id;
+    Long coworkingId;
+    String code;
     String name;
+    String description;
     Boolean active;
     Boolean archived;
-    Long configurationVersion;
     LocalDateTime archivedAt;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;

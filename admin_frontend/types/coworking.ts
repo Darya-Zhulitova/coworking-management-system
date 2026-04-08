@@ -3,6 +3,7 @@ export interface Coworking {
   name: string;
   active: boolean;
   archived: boolean;
+  configurationVersion: number;
   archivedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;

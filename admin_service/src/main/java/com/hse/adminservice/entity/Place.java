@@ -21,9 +21,9 @@ public class Place {
     @Column(nullable = false)
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PlaceType type;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "place_type_id", nullable = false)
+    private CoworkingPlaceType placeType;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "coworking_id", nullable = false)

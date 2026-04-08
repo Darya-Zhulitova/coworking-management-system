@@ -1,6 +1,7 @@
 package com.hse.adminservice.controller;
 
 import com.hse.adminservice.dto.PlaceCreateRequest;
+import com.hse.adminservice.dto.PlaceDeactivationPreviewResponse;
 import com.hse.adminservice.dto.PlaceResponse;
 import com.hse.adminservice.dto.PlaceUpdateRequest;
 import com.hse.adminservice.service.PlaceService;
@@ -25,8 +26,8 @@ public class PlaceController {
     }
 
     @GetMapping
-    public List<PlaceResponse> getAll(@PathVariable Long coworkingId) {
-        return placeService.getAll(coworkingId);
+    public List<PlaceResponse> getAll(@PathVariable Long coworkingId, @RequestParam(required = false) Long placeTypeId) {
+        return placeService.getAll(coworkingId, placeTypeId);
     }
 
     @GetMapping("/{placeId}")
@@ -37,6 +38,16 @@ public class PlaceController {
     @PutMapping("/{placeId}")
     public PlaceResponse update(@PathVariable Long coworkingId, @PathVariable Long placeId, @Valid @RequestBody PlaceUpdateRequest request) {
         return placeService.update(coworkingId, placeId, request);
+    }
+
+    @PostMapping("/{placeId}/deactivate")
+    public PlaceDeactivationPreviewResponse deactivate(@PathVariable Long coworkingId, @PathVariable Long placeId) {
+        return placeService.deactivate(coworkingId, placeId);
+    }
+
+    @PostMapping("/{placeId}/activate")
+    public PlaceResponse activate(@PathVariable Long coworkingId, @PathVariable Long placeId) {
+        return placeService.activate(coworkingId, placeId);
     }
 
     @DeleteMapping("/{placeId}")

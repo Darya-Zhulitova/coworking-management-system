@@ -3,6 +3,16 @@ import 'server-only';
 import { env } from '@/lib/config/env';
 import type { AdminLoginRequest, AdminLoginResponse } from '@/types/auth';
 import type { Coworking, CoworkingDashboard, CreateCoworkingRequest, UpdateCoworkingRequest } from '@/types/coworking';
+import type {
+  CoworkingConfigSnapshot,
+  CreatePlaceRequest,
+  CreatePlaceTypeRequest,
+  PlaceDeactivationPreview,
+  PlaceDto,
+  PlaceTypeDto,
+  UpdatePlaceRequest,
+  UpdatePlaceTypeRequest,
+} from '@/types/place';
 import type { AssignTenantRoleRequest, TenantRoleDefinition, TenantStaffMember, UpdateTenantRoleRequest } from '@/types/staff';
 
 export class BackendRequestError extends Error {
@@ -109,4 +119,69 @@ export async function updateTenantRole(token: string, coworkingId: number, acces
 
 export async function deactivateTenantAccess(token: string, coworkingId: number, accessId: number): Promise<void> {
   await requestBackend<void>(`/coworkings/${coworkingId}/staff/${accessId}`, { method: 'DELETE' }, token);
+}
+
+export async function getPlaceTypes(token: string, coworkingId: number): Promise<PlaceTypeDto[]> {
+  return requestBackend<PlaceTypeDto[]>(`/coworkings/${coworkingId}/place-types`, undefined, token);
+}
+
+export async function createPlaceType(token: string, coworkingId: number, payload: CreatePlaceTypeRequest): Promise<PlaceTypeDto> {
+  return requestBackend<PlaceTypeDto>(`/coworkings/${coworkingId}/place-types`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function updatePlaceType(token: string, coworkingId: number, placeTypeId: number, payload: UpdatePlaceTypeRequest): Promise<PlaceTypeDto> {
+  return requestBackend<PlaceTypeDto>(`/coworkings/${coworkingId}/place-types/${placeTypeId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function archivePlaceType(token: string, coworkingId: number, placeTypeId: number): Promise<void> {
+  await requestBackend<void>(`/coworkings/${coworkingId}/place-types/${placeTypeId}`, { method: 'DELETE' }, token);
+}
+
+export async function getPlaces(token: string, coworkingId: number, placeTypeId?: number): Promise<PlaceDto[]> {
+  const query = placeTypeId == null ? '' : `?placeTypeId=${placeTypeId}`;
+  return requestBackend<PlaceDto[]>(`/coworkings/${coworkingId}/places${query}`, undefined, token);
+}
+
+export async function createPlace(token: string, coworkingId: number, payload: CreatePlaceRequest): Promise<PlaceDto> {
+  return requestBackend<PlaceDto>(`/coworkings/${coworkingId}/places`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function updatePlace(token: string, coworkingId: number, placeId: number, payload: UpdatePlaceRequest): Promise<PlaceDto> {
+  return requestBackend<PlaceDto>(`/coworkings/${coworkingId}/places/${placeId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function deactivatePlace(token: string, coworkingId: number, placeId: number): Promise<PlaceDeactivationPreview> {
+  return requestBackend<PlaceDeactivationPreview>(`/coworkings/${coworkingId}/places/${placeId}/deactivate`, {
+    method: 'POST',
+  }, token);
+}
+
+export async function activatePlace(token: string, coworkingId: number, placeId: number): Promise<PlaceDto> {
+  return requestBackend<PlaceDto>(`/coworkings/${coworkingId}/places/${placeId}/activate`, {
+    method: 'POST',
+  }, token);
+}
+
+export async function archivePlace(token: string, coworkingId: number, placeId: number): Promise<void> {
+  await requestBackend<void>(`/coworkings/${coworkingId}/places/${placeId}`, { method: 'DELETE' }, token);
+}
+
+export async function getCoworkingConfigSnapshot(token: string, coworkingId: number): Promise<CoworkingConfigSnapshot> {
+  return requestBackend<CoworkingConfigSnapshot>(`/internal/config/coworkings/${coworkingId}/snapshot`, undefined, token);
 }

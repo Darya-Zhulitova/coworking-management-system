@@ -39,6 +39,7 @@ public class CoworkingServiceImpl implements CoworkingService {
                 .name(request.getName())
                 .active(true)
                 .archived(false)
+                .configurationVersion(0L)
                 .archivedAt(null)
                 .createdAt(now)
                 .updatedAt(now)
