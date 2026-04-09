@@ -1,79 +1,140 @@
-export type Membership = {
+export type MembershipStatus = 'active' | 'pending' | 'blocked';
+export type BookingStatusTab = 'active' | 'history';
+export type LedgerType =
+  | 'DEPOSIT'
+  | 'WITHDRAWAL'
+  | 'BOOKING_CHARGE'
+  | 'CANCELLATION_REFUND'
+  | 'DAY_CLOSURE_COMPENSATION'
+  | 'MEMBERSHIP_BLOCK_COMPENSATION'
+  | 'SERVICE_REQUEST_CHARGE';
+export type PayRequestStatus = 'Pending' | 'Approved' | 'Rejected';
+export type ServiceRequestStatus = 'new' | 'in_progress' | 'resolved' | 'rejected';
+export type MessageAuthorType = 'USER' | 'ADMIN' | 'SYSTEM';
+
+export type UserProfile = {
   id: number;
-  coworkingId: number;
-  balance: string;
-  status: string;
-  createdAt: string;
+  name: string;
+  email: string;
+  description: string;
+  avatarLabel: string;
 };
 
-export type CreateMembershipPayload = {
+export type MembershipSummary = {
+  id: number;
   coworkingId: number;
+  coworkingName: string;
+  status: MembershipStatus;
+  scheduleLabel: string;
+  address: string;
+  balance: number;
+};
+
+export type CoworkingSummary = {
+  id: number;
+  name: string;
+  scheduleLabel: string;
+  address: string;
+  heroTitle: string;
+  heroText: string;
+  autoApproveMembership: boolean;
+};
+
+export type Place = {
+  id: number;
+  coworkingId: number;
+  name: string;
+  floor: string;
+  floorId: number;
+  typeName: string;
+  tariffId: number;
+  pricePerDay: number;
+  amenities: string[];
+  available: boolean;
+};
+
+export type Booking = {
+  id: number;
+  coworkingId: number;
+  requestId: string;
+  placeName: string;
+  date: string;
+  cost: number;
+  active: boolean;
+  fullRefundHoursBefore: number;
+  lateCancellationRefundPercent: number;
+  cancellationPreview?: number;
+};
+
+export type LedgerEntry = {
+  id: number;
+  coworkingId: number;
+  timestamp: string;
+  type: LedgerType;
+  name: string;
+  comment: string;
+  amount: number;
+};
+
+export type PayRequest = {
+  id: number;
+  coworkingId: number;
+  amount: number;
+  status: PayRequestStatus;
+  userComment: string;
+  createdAt: string;
 };
 
 export type ServiceRequest = {
   id: number;
-  membershipId: number;
-  placeId: number | null;
-  bookingId: number | null;
-  category: string;
-  description: string;
-  status: string;
+  coworkingId: number;
+  name: string;
+  typeName: string;
+  cost: number;
+  status: ServiceRequestStatus;
   createdAt: string;
+  updatedAt: string;
 };
 
-export type CreateServiceRequestPayload = {
-  membershipId: number;
-  placeId: number | null;
-  bookingId: number | null;
-  category: string;
-  description: string;
-};
-
-
-export type FinanceRequestType = "DEPOSIT" | "WITHDRAW";
-
-export type FinanceRequestStatus = "PENDING" | "COMPLETED" | "REJECTED";
-
-export type FinanceRequest = {
+export type RequestMessage = {
   id: number;
-  membershipId: number;
-  type: FinanceRequestType;
-  amount: string;
-  status: FinanceRequestStatus;
-  comment: string;
-  createdAt: string;
-  processedAt: string | null;
+  requestId: number;
+  authorType: MessageAuthorType;
+  authorName: string;
+  text: string;
+  timestamp: string;
+  readAt?: string;
 };
 
-export type AccountTransaction = {
+export type ServiceRequestTypeOption = {
   id: number;
-  membershipId: number;
-  type:
-    | "BOOKING_DEBIT"
-    | "BOOKING_REFUND"
-    | "COMPENSATION"
-    | "DEPOSIT_APPROVED"
-    | "WITHDRAW_APPROVED";
-  amount: string;
-  description: string;
-  createdAt: string;
+  coworkingId: number;
+  name: string;
+  cost: number;
 };
 
-export type BalanceOverview = {
-  account: {
-    membershipId: number;
-    balance: string;
-    currency: string;
-    updatedAt: string;
-  };
-  pendingCount: number;
-  financeRequests: FinanceRequest[];
-  transactions: AccountTransaction[];
+export type BookingCartItem = {
+  placeId: number;
+  date: string;
 };
 
-export type CreateFinanceRequestPayload = {
-  membershipId: number;
-  type: FinanceRequestType;
-  amount: string;
-  comment: string;
+export type CartCalculatedItem = {
+  placeId: number;
+  placeName: string;
+  date: string;
+  floor: string;
+  typeName: string;
+  basePrice: number;
+  discountPercent: number;
+  discountAmount: number;
+  finalPrice: number;
+  available: boolean;
+};
+
+export type CartCalculationSummary = {
+  totalBasePrice: number;
+  totalDiscount: number;
+  totalFinalPrice: number;
+  unavailableCount: number;
+  discountHints: string[];
 };

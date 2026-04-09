@@ -1,15 +1,11 @@
-import {ReactNode} from "react";
-import {AppHeader} from "./app-header";
+import {ReactNode} from 'react';
+import {AppHeader} from '@/components/layout/app-header';
 
-type AppShellProps = {
-  children: ReactNode;
-};
-
-export function AppShell({children}: AppShellProps) {
+export function AppShell({children}: { children: ReactNode }) {
   return (
-    <div className="min-vh-100 bg-body-secondary">
+    <div className="bg-body-tertiary min-vh-100">
       <AppHeader/>
-      <main className="container py-4">{children}</main>
+      <main className="container py-4 py-lg-5 app-main-shell">{children}</main>
     </div>
   );
 }
