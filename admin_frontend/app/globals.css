@@ -9,6 +9,6 @@ a { text-decoration: none; }
 pre { margin: 0; white-space: pre-wrap; }
 .page-shell, .auth-shell { min-height: 100vh; }
 .auth-card, .content-card { border: 0; box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.08); }
-.tenant-nav .nav-link.active { font-weight: 600; }
+.coworking-nav .nav-link.active { font-weight: 600; }
 .entity-card + .entity-card { margin-top: 1rem; }
 .status-pill { display: inline-flex; align-items: center; gap: 0.35rem; }

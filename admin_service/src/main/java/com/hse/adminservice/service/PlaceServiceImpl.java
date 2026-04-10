@@ -1,7 +1,7 @@
 package com.hse.adminservice.service;
 
 import com.hse.adminservice.authorization.AdminAuthorizationService;
-import com.hse.adminservice.authorization.EffectiveAdminAction;
+import com.hse.adminservice.entity.Grant;
 import com.hse.adminservice.dto.PlaceCreateRequest;
 import com.hse.adminservice.dto.PlaceDeactivationPreviewResponse;
 import com.hse.adminservice.dto.PlaceResponse;
@@ -39,7 +39,7 @@ public class PlaceServiceImpl implements PlaceService {
     @Override
     @Transactional
     public PlaceResponse create(Long coworkingId, PlaceCreateRequest request) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.MANAGE_PLACES);
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_MANAGE);
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 
@@ -68,7 +68,7 @@ public class PlaceServiceImpl implements PlaceService {
 
     @Override
     public List<PlaceResponse> getAll(Long coworkingId, Long placeTypeId) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.VIEW_PLACES);
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_VIEW);
         List<Place> places = placeTypeId == null
                 ? placeRepository.findAllByCoworkingIdAndArchivedFalseOrderByNameAsc(coworkingId)
                 : placeRepository.findAllByCoworkingIdAndPlaceTypeIdAndArchivedFalseOrderByNameAsc(coworkingId, placeTypeId);
@@ -77,14 +77,14 @@ public class PlaceServiceImpl implements PlaceService {
 
     @Override
     public PlaceResponse getById(Long coworkingId, Long placeId) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.VIEW_PLACES);
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_VIEW);
         return placeMapper.toResponse(getExistingPlace(coworkingId, placeId));
     }
 
     @Override
     @Transactional
     public PlaceResponse update(Long coworkingId, Long placeId, PlaceUpdateRequest request) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.MANAGE_PLACES);
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_MANAGE);
         Place place = getExistingPlace(coworkingId, placeId);
         String normalizedName = request.getName().trim();
 
@@ -112,7 +112,7 @@ public class PlaceServiceImpl implements PlaceService {
     @Override
     @Transactional
     public PlaceDeactivationPreviewResponse deactivate(Long coworkingId, Long placeId) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.MANAGE_PLACES);
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_MANAGE);
         Place place = getExistingPlace(coworkingId, placeId);
         var preview = userBookingImpactPort.previewForPlaceDeactivation(place);
 
@@ -134,7 +134,7 @@ public class PlaceServiceImpl implements PlaceService {
     @Override
     @Transactional
     public PlaceResponse activate(Long coworkingId, Long placeId) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.MANAGE_PLACES);
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_MANAGE);
         Place place = getExistingPlace(coworkingId, placeId);
         if (!Boolean.TRUE.equals(place.getPlaceType().getActive())) {
             throw new ConflictException("Cannot activate place while its place type is inactive");
@@ -149,7 +149,7 @@ public class PlaceServiceImpl implements PlaceService {
     @Override
     @Transactional
     public void archive(Long coworkingId, Long placeId) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.MANAGE_PLACES);
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_MANAGE);
         Place place = getExistingPlace(coworkingId, placeId);
 
         LocalDateTime now = LocalDateTime.now();

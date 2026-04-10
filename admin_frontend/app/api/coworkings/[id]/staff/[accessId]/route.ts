@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { BackendRequestError, deactivateTenantAccess, updateTenantRole } from '@/lib/api/backend';
+import { BackendRequestError, deactivateCoworkingAccess, updateCoworkingRole } from '@/lib/api/backend';
 import { getAdminSession } from '@/lib/auth/session';
 
 function parseId(value: string): number | null {
@@ -14,14 +14,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const coworkingId = parseId(id);
   const parsedAccessId = parseId(accessId);
   if (coworkingId == null || parsedAccessId == null) return NextResponse.json({ message: 'Invalid identifiers.' }, { status: 400 });
-  let payload: { role?: 'MANAGER' | 'STAFF_SUPPORT'; active?: boolean };
-  try { payload = await request.json() as { role?: 'MANAGER' | 'STAFF_SUPPORT'; active?: boolean }; } catch { return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 }); }
-  if (!payload.role || typeof payload.active !== 'boolean') return NextResponse.json({ message: 'Role and active flag are required.' }, { status: 400 });
+  let payload: { roleId?: number; active?: boolean };
+  try { payload = await request.json() as { roleId?: number; active?: boolean }; } catch { return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 }); }
+  if (!payload.roleId || typeof payload.active !== 'boolean') return NextResponse.json({ message: 'Role and active flag are required.' }, { status: 400 });
   try {
-    return NextResponse.json(await updateTenantRole(session.token, coworkingId, parsedAccessId, { role: payload.role, active: payload.active }));
+    return NextResponse.json(await updateCoworkingRole(session.token, coworkingId, parsedAccessId, { roleId: payload.roleId, active: payload.active }));
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    return NextResponse.json({ message: 'Unable to update tenant role.' }, { status: 500 });
+    return NextResponse.json({ message: 'Unable to update staff access.' }, { status: 500 });
   }
 }
 
@@ -33,10 +33,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const parsedAccessId = parseId(accessId);
   if (coworkingId == null || parsedAccessId == null) return NextResponse.json({ message: 'Invalid identifiers.' }, { status: 400 });
   try {
-    await deactivateTenantAccess(session.token, coworkingId, parsedAccessId);
+    await deactivateCoworkingAccess(session.token, coworkingId, parsedAccessId);
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    return NextResponse.json({ message: 'Unable to deactivate tenant access.' }, { status: 500 });
+    return NextResponse.json({ message: 'Unable to deactivate staff access.' }, { status: 500 });
   }
 }

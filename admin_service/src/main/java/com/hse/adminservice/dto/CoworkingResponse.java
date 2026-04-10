@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public class CoworkingResponse {
     Long id;
     String name;
+    Integer schedule;
     Boolean active;
     Boolean archived;
     Long configurationVersion;

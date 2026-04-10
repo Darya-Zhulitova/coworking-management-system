@@ -1,17 +1,13 @@
 package com.hse.adminservice.config;
 
-import com.hse.adminservice.entity.AdminCoworkingRole;
-import com.hse.adminservice.entity.AdminUser;
+import com.hse.adminservice.authorization.SystemCoworkingRoleDefinitions;
+import com.hse.adminservice.entity.Admin;
 import com.hse.adminservice.entity.Coworking;
 import com.hse.adminservice.entity.CoworkingPlaceType;
 import com.hse.adminservice.entity.Place;
-import com.hse.adminservice.entity.SuperAdmin;
-import com.hse.adminservice.repository.AdminUserRepository;
-import com.hse.adminservice.repository.CoworkingPlaceTypeRepository;
-import com.hse.adminservice.repository.CoworkingRepository;
-import com.hse.adminservice.repository.PlaceRepository;
-import com.hse.adminservice.repository.SuperAdminRepository;
-import com.hse.adminservice.service.AdminCoworkingAccessService;
+import com.hse.adminservice.entity.Role;
+import com.hse.adminservice.repository.*;
+import com.hse.adminservice.service.AccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -25,83 +21,67 @@ import java.time.LocalDateTime;
 public class AdminDataInitializer {
 
     private static final String DEFAULT_OWNER_EMAIL = "admin@test.test";
+    private static final String DEFAULT_OWNER_NAME = "Default Owner";
     private static final String DEFAULT_OWNER_PASSWORD = "pass";
     private static final String DEFAULT_COWORKING_NAME = "Default Coworking";
-    private static final String DEFAULT_SUPERADMIN_EMAIL = "superadmin@test.test";
-    private static final String DEFAULT_SUPERADMIN_PASSWORD = "pass";
     private static final String SECOND_OWNER_EMAIL = "manager@test.test";
+    private static final String SECOND_OWNER_NAME = "Second Owner";
     private static final String SECOND_OWNER_PASSWORD = "pass";
     private static final String SECOND_COWORKING_NAME = "Second Coworking";
     private static final String STAFF_MANAGER_EMAIL = "staff1@test.test";
+    private static final String STAFF_MANAGER_NAME = "Staff Manager";
     private static final String STAFF_MANAGER_PASSWORD = "pass";
     private static final String STAFF_SUPPORT_EMAIL = "support1@test.test";
+    private static final String STAFF_SUPPORT_NAME = "Support Agent";
     private static final String STAFF_SUPPORT_PASSWORD = "pass";
 
     private final PasswordEncoder passwordEncoder;
-    private final AdminCoworkingAccessService accessService;
+    private final AccessService accessService;
+    private final SystemCoworkingRoleDefinitions systemCoworkingRoleDefinitions;
 
     @Bean
     CommandLineRunner initAdmin(
-            AdminUserRepository adminUserRepository,
-            SuperAdminRepository superAdminRepository,
+            AdminRepository adminRepository,
             CoworkingRepository coworkingRepository,
+            RoleRepository roleRepository,
             CoworkingPlaceTypeRepository placeTypeRepository,
             PlaceRepository placeRepository
     ) {
         return args -> {
             LocalDateTime now = LocalDateTime.now();
 
-            AdminUser adminUser = adminUserRepository.findByEmailAndArchivedFalse(DEFAULT_OWNER_EMAIL)
-                    .orElseGet(() -> adminUserRepository.save(AdminUser.builder()
+            Admin admin = adminRepository.findByEmailIgnoreCase(DEFAULT_OWNER_EMAIL)
+                    .orElseGet(() -> adminRepository.save(Admin.builder()
                             .email(DEFAULT_OWNER_EMAIL)
+                            .name(DEFAULT_OWNER_NAME)
                             .passwordHash(passwordEncoder.encode(DEFAULT_OWNER_PASSWORD))
-                            .active(true)
-                            .archived(false)
-                            .archivedAt(null)
                             .createdAt(now)
                             .updatedAt(now)
                             .build()));
 
-            superAdminRepository.findByEmailAndArchivedFalse(DEFAULT_SUPERADMIN_EMAIL)
-                    .orElseGet(() -> superAdminRepository.save(SuperAdmin.builder()
-                            .email(DEFAULT_SUPERADMIN_EMAIL)
-                            .passwordHash(passwordEncoder.encode(DEFAULT_SUPERADMIN_PASSWORD))
-                            .active(true)
-                            .archived(false)
-                            .archivedAt(null)
-                            .createdAt(now)
-                            .updatedAt(now)
-                            .build()));
-
-            AdminUser secondAdminUser = adminUserRepository.findByEmailAndArchivedFalse(SECOND_OWNER_EMAIL)
-                    .orElseGet(() -> adminUserRepository.save(AdminUser.builder()
+            Admin secondAdmin = adminRepository.findByEmailIgnoreCase(SECOND_OWNER_EMAIL)
+                    .orElseGet(() -> adminRepository.save(Admin.builder()
                             .email(SECOND_OWNER_EMAIL)
+                            .name(SECOND_OWNER_NAME)
                             .passwordHash(passwordEncoder.encode(SECOND_OWNER_PASSWORD))
-                            .active(true)
-                            .archived(false)
-                            .archivedAt(null)
                             .createdAt(now)
                             .updatedAt(now)
                             .build()));
 
-            adminUserRepository.findByEmailAndArchivedFalse(STAFF_MANAGER_EMAIL)
-                    .orElseGet(() -> adminUserRepository.save(AdminUser.builder()
+            adminRepository.findByEmailIgnoreCase(STAFF_MANAGER_EMAIL)
+                    .orElseGet(() -> adminRepository.save(Admin.builder()
                             .email(STAFF_MANAGER_EMAIL)
+                            .name(STAFF_MANAGER_NAME)
                             .passwordHash(passwordEncoder.encode(STAFF_MANAGER_PASSWORD))
-                            .active(true)
-                            .archived(false)
-                            .archivedAt(null)
                             .createdAt(now)
                             .updatedAt(now)
                             .build()));
 
-            adminUserRepository.findByEmailAndArchivedFalse(STAFF_SUPPORT_EMAIL)
-                    .orElseGet(() -> adminUserRepository.save(AdminUser.builder()
+            adminRepository.findByEmailIgnoreCase(STAFF_SUPPORT_EMAIL)
+                    .orElseGet(() -> adminRepository.save(Admin.builder()
                             .email(STAFF_SUPPORT_EMAIL)
+                            .name(STAFF_SUPPORT_NAME)
                             .passwordHash(passwordEncoder.encode(STAFF_SUPPORT_PASSWORD))
-                            .active(true)
-                            .archived(false)
-                            .archivedAt(null)
                             .createdAt(now)
                             .updatedAt(now)
                             .build()));
@@ -112,6 +92,8 @@ public class AdminDataInitializer {
                     .findFirst()
                     .orElseGet(() -> coworkingRepository.save(Coworking.builder()
                             .name(DEFAULT_COWORKING_NAME)
+                            .schedule(127)
+                            .ownerId(admin.getId())
                             .active(true)
                             .archived(false)
                             .configurationVersion(0L)
@@ -126,6 +108,8 @@ public class AdminDataInitializer {
                     .findFirst()
                     .orElseGet(() -> coworkingRepository.save(Coworking.builder()
                             .name(SECOND_COWORKING_NAME)
+                            .schedule(127)
+                            .ownerId(secondAdmin.getId())
                             .active(true)
                             .archived(false)
                             .configurationVersion(0L)
@@ -134,13 +118,23 @@ public class AdminDataInitializer {
                             .updatedAt(now)
                             .build()));
 
-            accessService.grantOwnerAccess(adminUser, coworking);
-            accessService.grantOwnerAccess(secondAdminUser, secondCoworking);
+            ensureSystemRoles(roleRepository, coworking, now);
+            ensureSystemRoles(roleRepository, secondCoworking, now);
+
+            Role managerRole = roleRepository.findAllByCoworkingIdAndActiveTrueOrderByNameAsc(coworking.getId()).stream()
+                    .filter(role -> "Manager".equals(role.getName()))
+                    .findFirst()
+                    .orElseThrow();
+            Role staffSupportRole = roleRepository.findAllByCoworkingIdAndActiveTrueOrderByNameAsc(coworking.getId()).stream()
+                    .filter(role -> "Staff support".equals(role.getName()))
+                    .findFirst()
+                    .orElseThrow();
+
             try {
-                accessService.assignRole(coworking.getId(), STAFF_MANAGER_EMAIL, AdminCoworkingRole.MANAGER);
+                accessService.assignRole(coworking.getId(), STAFF_MANAGER_EMAIL, managerRole.getId());
             } catch (Exception ignored) {}
             try {
-                accessService.assignRole(coworking.getId(), STAFF_SUPPORT_EMAIL, AdminCoworkingRole.STAFF_SUPPORT);
+                accessService.assignRole(coworking.getId(), STAFF_SUPPORT_EMAIL, staffSupportRole.getId());
             } catch (Exception ignored) {}
 
             seedPlaceType(placeTypeRepository, coworking, "DESK", "Desk", "Open-space workstation", now);
@@ -175,6 +169,15 @@ public class AdminDataInitializer {
             coworkingRepository.save(coworking);
             coworkingRepository.save(secondCoworking);
         };
+    }
+
+    private void ensureSystemRoles(RoleRepository repository, Coworking coworking, LocalDateTime now) {
+        if (!repository.existsByCoworkingIdAndNameIgnoreCase(coworking.getId(), "Manager")) {
+            repository.save(systemCoworkingRoleDefinitions.buildManagerRole(coworking, now));
+        }
+        if (!repository.existsByCoworkingIdAndNameIgnoreCase(coworking.getId(), "Staff support")) {
+            repository.save(systemCoworkingRoleDefinitions.buildStaffSupportRole(coworking, now));
+        }
     }
 
     private void seedPlaceType(CoworkingPlaceTypeRepository repository, Coworking coworking, String code, String name, String description, LocalDateTime now) {

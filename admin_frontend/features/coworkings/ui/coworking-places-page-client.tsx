@@ -12,8 +12,8 @@ import Row from 'react-bootstrap/Row';
 import Stack from 'react-bootstrap/Stack';
 import Table from 'react-bootstrap/Table';
 import { FullPageError, FullPageLoader } from '@/components/page-state';
-import { TenantNav } from '@/components/tenant-nav';
-import { useAdminSession } from '@/features/session/use-admin-session';
+import { CoworkingNav } from '@/components/coworking-nav';
+import { useAppContext } from '@/features/context/use-app-context';
 import { requestJson } from '@/lib/client/api';
 import type { Coworking } from '@/types/coworking';
 import type {
@@ -30,8 +30,8 @@ interface PlacesBundle {
   snapshot: CoworkingConfigSnapshot;
 }
 
-export function TenantPlacesPageClient({ coworkingId }: { coworkingId: number }) {
-  const { session, isLoading: isSessionLoading, errorMessage: sessionError } = useAdminSession({ redirectToLogin: true });
+export function CoworkingPlacesPageClient({ coworkingId }: { coworkingId: number }) {
+  const { context, isLoading: isContextLoading, errorMessage: contextError } = useAppContext({ coworkingId, redirectToLogin: true });
   const [bundle, setBundle] = useState<PlacesBundle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -43,11 +43,8 @@ export function TenantPlacesPageClient({ coworkingId }: { coworkingId: number })
   const [placeForm, setPlaceForm] = useState({ name: '', placeTypeId: '' });
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
-  const canManagePlaces = useMemo(() => {
-    if (!session) return false;
-    const accessible = session.coworkings.find((item) => item.id === coworkingId);
-    return session.principalType === 'SUPERADMIN' || accessible?.owner === true || accessible?.role === 'MANAGER';
-  }, [coworkingId, session]);
+  const canManagePlaces = useMemo(() => context?.grants.includes('PLACE_MANAGE') ?? false, [context]);
+
 
   const loadData = useCallback(async () => {
     const query = filterPlaceTypeId === 'all' ? '' : `?placeTypeId=${filterPlaceTypeId}`;
@@ -207,9 +204,9 @@ export function TenantPlacesPageClient({ coworkingId }: { coworkingId: number })
     setPlaceForm((current) => current.placeTypeId ? current : { ...current, placeTypeId: String(bundle.placeTypes[0].id) });
   }, [bundle?.placeTypes]);
 
-  if (isSessionLoading || isLoading) return <FullPageLoader label="Loading place configuration..." />;
-  if (sessionError) return <FullPageError message={sessionError} />;
-  if (!session) return <FullPageLoader label="Redirecting to login..." />;
+  if (isContextLoading || isLoading) return <FullPageLoader label="Loading place configuration..." />;
+  if (contextError) return <FullPageError message={contextError} />;
+  if (!context || context.coworkingId == null) return <FullPageLoader label="Redirecting to login..." />;
   if (errorMessage && !bundle) return <FullPageError message={errorMessage} />;
   if (!bundle) return <FullPageError message="Place configuration is unavailable." />;
 
@@ -217,15 +214,15 @@ export function TenantPlacesPageClient({ coworkingId }: { coworkingId: number })
     <main className="page-shell">
       <Container className="py-4 py-md-5">
         <Stack gap={4}>
-          <TenantNav coworkingId={coworkingId} />
+          <CoworkingNav coworkingId={coworkingId} grants={context.grants} />
 
           <Card className="content-card">
             <Card.Body>
               <Stack gap={3}>
                 <div>
-                  <Card.Title as="h1" className="mb-2">{bundle.coworking.name} places configuration</Card.Title>
+                  <Card.Title as="h1" className="mb-2">{context.coworkingName} places configuration</Card.Title>
                   <Card.Text className="mb-0 text-body-secondary">
-                    Config version: {bundle.snapshot.configVersion} · Generated at: {new Date(bundle.snapshot.generatedAt).toLocaleString()}
+                    Resolved access: {context.role} · Config version: {bundle.snapshot.configVersion} · Generated at: {new Date(bundle.snapshot.generatedAt).toLocaleString()}
                   </Card.Text>
                 </div>
 
@@ -252,7 +249,7 @@ export function TenantPlacesPageClient({ coworkingId }: { coworkingId: number })
                   <Stack gap={3}>
                     <div>
                       <Card.Title as="h2" className="h4 mb-2">Place types</Card.Title>
-                      <Card.Text className="text-body-secondary mb-0">Tenant-specific place types, without map editor.</Card.Text>
+                      <Card.Text className="text-body-secondary mb-0">Coworking-specific place types, without map editor.</Card.Text>
                     </div>
 
                     {canManagePlaces ? (
@@ -274,7 +271,7 @@ export function TenantPlacesPageClient({ coworkingId }: { coworkingId: number })
                         </Stack>
                       </Form>
                     ) : (
-                      <Alert variant="secondary" className="mb-0">Read-only access. Managing place types requires MANAGE_PLACES.</Alert>
+                      <Alert variant="secondary" className="mb-0">Read-only access. Managing place types requires PLACE_MANAGE.</Alert>
                     )}
 
                     <Table responsive hover>

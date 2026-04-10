@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { BackendRequestError, getTenantRoles } from '@/lib/api/backend';
+import { BackendRequestError, getCoworkingRoles } from '@/lib/api/backend';
 import { getAdminSession } from '@/lib/auth/session';
 
 function parseId(value: string): number | null {
@@ -13,9 +13,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const id = parseId((await params).id);
   if (id == null) return NextResponse.json({ message: 'Invalid coworking id.' }, { status: 400 });
   try {
-    return NextResponse.json(await getTenantRoles(session.token, id));
+    return NextResponse.json(await getCoworkingRoles(session.token, id));
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    return NextResponse.json({ message: 'Unable to load tenant roles.' }, { status: 500 });
+    return NextResponse.json({ message: 'Unable to load coworking roles.' }, { status: 500 });
   }
 }

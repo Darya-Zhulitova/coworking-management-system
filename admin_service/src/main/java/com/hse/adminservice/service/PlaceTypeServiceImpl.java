@@ -1,7 +1,7 @@
 package com.hse.adminservice.service;
 
 import com.hse.adminservice.authorization.AdminAuthorizationService;
-import com.hse.adminservice.authorization.EffectiveAdminAction;
+import com.hse.adminservice.entity.Grant;
 import com.hse.adminservice.dto.PlaceTypeCreateRequest;
 import com.hse.adminservice.dto.PlaceTypeResponse;
 import com.hse.adminservice.dto.PlaceTypeUpdateRequest;
@@ -35,7 +35,7 @@ public class PlaceTypeServiceImpl implements PlaceTypeService {
     @Override
     @Transactional
     public PlaceTypeResponse create(Long coworkingId, PlaceTypeCreateRequest request) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.MANAGE_PLACES);
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_MANAGE);
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 
@@ -61,7 +61,7 @@ public class PlaceTypeServiceImpl implements PlaceTypeService {
 
     @Override
     public List<PlaceTypeResponse> getAll(Long coworkingId) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.VIEW_PLACES);
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_VIEW);
         return placeTypeRepository.findAllByCoworkingIdAndArchivedFalseOrderByNameAsc(coworkingId).stream()
                 .map(placeTypeMapper::toResponse)
                 .toList();
@@ -69,7 +69,7 @@ public class PlaceTypeServiceImpl implements PlaceTypeService {
 
     @Override
     public PlaceTypeResponse getById(Long coworkingId, Long placeTypeId) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.VIEW_PLACES);
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_VIEW);
         CoworkingPlaceType placeType = getExistingType(coworkingId, placeTypeId);
         return placeTypeMapper.toResponse(placeType);
     }
@@ -77,7 +77,7 @@ public class PlaceTypeServiceImpl implements PlaceTypeService {
     @Override
     @Transactional
     public PlaceTypeResponse update(Long coworkingId, Long placeTypeId, PlaceTypeUpdateRequest request) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.MANAGE_PLACES);
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_MANAGE);
         CoworkingPlaceType placeType = getExistingType(coworkingId, placeTypeId);
 
         validateUniqueness(coworkingId, request.getCode(), request.getName(), placeTypeId);
@@ -98,7 +98,7 @@ public class PlaceTypeServiceImpl implements PlaceTypeService {
     @Override
     @Transactional
     public void archive(Long coworkingId, Long placeTypeId) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.MANAGE_PLACES);
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_MANAGE);
         CoworkingPlaceType placeType = getExistingType(coworkingId, placeTypeId);
 
         if (placeRepository.existsByCoworkingIdAndPlaceTypeIdAndArchivedFalse(coworkingId, placeTypeId)) {

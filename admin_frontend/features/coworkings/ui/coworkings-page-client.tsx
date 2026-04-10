@@ -19,32 +19,24 @@ import { LogoutButton } from '@/components/logout-button';
 import { FullPageError, FullPageLoader } from '@/components/page-state';
 import { requestJson } from '@/lib/client/api';
 import type { Coworking } from '@/types/coworking';
-import { useAdminSession } from '@/features/session/use-admin-session';
-
-function formatAccessLabel(isOwner: boolean, role: string | null) {
-  if (isOwner) return 'Owner';
-  if (role === 'MANAGER') return 'Manager';
-  if (role === 'STAFF_SUPPORT') return 'Staff support';
-  return 'Assigned';
-}
+import { useAppContext } from '@/features/context/use-app-context';
 
 export function CoworkingsPageClient() {
-  const { session, isLoading: isSessionLoading, errorMessage: sessionError } = useAdminSession({ redirectToLogin: true });
+  const { context, isLoading: isContextLoading, errorMessage: contextError } = useAppContext({ redirectToLogin: true });
   const [coworkings, setCoworkings] = useState<Coworking[]>([]);
   const [archivedCoworkings, setArchivedCoworkings] = useState<Coworking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const canCreate = useMemo(() => session?.grantedGlobalActions.includes('CREATE_COWORKING') ?? false, [session]);
-  const canViewAll = useMemo(() => session?.grantedGlobalActions.includes('VIEW_ALL_COWORKINGS') ?? false, [session]);
+  const canCreate = useMemo(() => context?.grants.includes('COWORKING_CREATE') ?? false, [context]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!context) return;
     let isMounted = true;
 
     Promise.all([
       requestJson<Coworking[]>('/api/coworkings'),
-      session.principalType === 'SUPERADMIN' ? requestJson<Coworking[]>('/api/coworkings?archived=true') : Promise.resolve([]),
+      requestJson<Coworking[]>('/api/coworkings?archived=true'),
     ])
       .then(([active, archived]) => {
         if (!isMounted) return;
@@ -62,17 +54,11 @@ export function CoworkingsPageClient() {
     return () => {
       isMounted = false;
     };
-  }, [session]);
+  }, [context]);
 
-  if (isSessionLoading || (session && isLoading)) {
-    return <FullPageLoader label="Loading coworkings..." />;
-  }
-  if (sessionError) {
-    return <FullPageError message={sessionError} />;
-  }
-  if (!session) {
-    return <FullPageLoader label="Redirecting to login..." />;
-  }
+  if (isContextLoading || (context && isLoading)) return <FullPageLoader label="Loading coworkings..." />;
+  if (contextError) return <FullPageError message={contextError} />;
+  if (!context) return <FullPageLoader label="Redirecting to login..." />;
 
   return (
     <main className="page-shell">
@@ -83,10 +69,8 @@ export function CoworkingsPageClient() {
               <Stack direction="horizontal" className="justify-content-between align-items-start gap-3 flex-wrap">
                 <div>
                   <CardTitle as="h1" className="mb-2">Coworkings</CardTitle>
-                  <CardText className="mb-1">Principal type: <strong>{session.principalType}</strong></CardText>
-                  {session.principalType === 'TENANT_ADMIN' ? (
-                    <CardText className="mb-0 text-body-secondary">Access level is resolved per tenant from owner status or assigned role.</CardText>
-                  ) : null}
+                  <CardText className="mb-1">Signed in as <strong>{context.name}</strong></CardText>
+                  <CardText className="mb-0 text-body-secondary">{context.email}</CardText>
                 </div>
                 <LogoutButton />
               </Stack>
@@ -104,36 +88,28 @@ export function CoworkingsPageClient() {
 
           <Card className="content-card">
             <CardBody>
-              <CardTitle as="h2" className="h4 mb-3">{canViewAll ? 'All active coworkings' : 'Accessible coworkings'}</CardTitle>
+              <CardTitle as="h2" className="h4 mb-3">Accessible coworkings</CardTitle>
               {errorMessage ? <Alert variant="danger">{errorMessage}</Alert> : null}
               {coworkings.length > 0 ? (
                 <ListGroup variant="flush">
-                  {coworkings.map((coworking) => {
-                    const access = session.coworkings.find((item) => item.id === coworking.id);
-                    return (
-                      <ListGroup.Item key={coworking.id} className="px-0 entity-card">
-                        <Row className="g-3 align-items-center">
-                          <Col md>
-                            <div className="fw-semibold fs-5">{coworking.name}</div>
-                            <div className="text-body-secondary">ID: {coworking.id}</div>
-                            <Stack direction="horizontal" gap={2} className="flex-wrap mt-2">
-                              <Badge bg={coworking.active ? 'success' : 'secondary'}>{coworking.active ? 'Active' : 'Inactive'}</Badge>
-                              {access ? (
-                                <Badge bg={access.owner ? 'dark' : 'info'}>{formatAccessLabel(access.owner, access.role)}</Badge>
-                              ) : null}
-                            </Stack>
-                          </Col>
-                          <Col md="auto">
-                            <Stack direction="horizontal" gap={2} className="flex-wrap">
-                              <Button as={Link} href={`/coworkings/${coworking.id}/dashboard`} variant="primary">Open dashboard</Button>
-                              <Button as={Link} href={`/coworkings/${coworking.id}`} variant="outline-primary">Details</Button>
-                              <Button as={Link} href={`/coworkings/${coworking.id}/staff`} variant="outline-secondary">Staff</Button>
-                            </Stack>
-                          </Col>
-                        </Row>
-                      </ListGroup.Item>
-                    );
-                  })}
+                  {coworkings.map((coworking) => (
+                    <ListGroup.Item key={coworking.id} className="px-0 entity-card">
+                      <Row className="g-3 align-items-center">
+                        <Col md>
+                          <div className="fw-semibold fs-5">{coworking.name}</div>
+                          <div className="text-body-secondary">ID: {coworking.id}</div>
+                          <Stack direction="horizontal" gap={2} className="flex-wrap mt-2">
+                            <Badge bg={coworking.active ? 'success' : 'secondary'}>{coworking.active ? 'Active' : 'Inactive'}</Badge>
+                          </Stack>
+                        </Col>
+                        <Col md="auto">
+                          <Stack direction="horizontal" gap={2} className="flex-wrap">
+                            <Button as={Link} href={`/coworkings/${coworking.id}/dashboard`} variant="primary">Open</Button>
+                          </Stack>
+                        </Col>
+                      </Row>
+                    </ListGroup.Item>
+                  ))}
                 </ListGroup>
               ) : (
                 <Alert variant="secondary" className="mb-0">No coworkings are available for the current subject.</Alert>
@@ -141,22 +117,18 @@ export function CoworkingsPageClient() {
             </CardBody>
           </Card>
 
-          {session.principalType === 'SUPERADMIN' ? (
+          {archivedCoworkings.length > 0 ? (
             <Card className="content-card">
               <CardBody>
                 <CardTitle as="h2" className="h4 mb-3">Archived coworkings</CardTitle>
-                {archivedCoworkings.length > 0 ? (
-                  <ListGroup variant="flush">
-                    {archivedCoworkings.map((coworking) => (
-                      <ListGroup.Item key={coworking.id} className="px-0 entity-card">
-                        <div className="fw-semibold">{coworking.name}</div>
-                        <div className="text-body-secondary">Archived at: {coworking.archivedAt ?? 'n/a'}</div>
-                      </ListGroup.Item>
-                    ))}
-                  </ListGroup>
-                ) : (
-                  <Alert variant="secondary" className="mb-0">No archived coworkings yet.</Alert>
-                )}
+                <ListGroup variant="flush">
+                  {archivedCoworkings.map((coworking) => (
+                    <ListGroup.Item key={coworking.id} className="px-0 entity-card">
+                      <div className="fw-semibold">{coworking.name}</div>
+                      <div className="text-body-secondary">ID: {coworking.id}</div>
+                    </ListGroup.Item>
+                  ))}
+                </ListGroup>
               </CardBody>
             </Card>
           ) : null}

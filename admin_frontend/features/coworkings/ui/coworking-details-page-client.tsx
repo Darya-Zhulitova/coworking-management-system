@@ -10,28 +10,23 @@ import Container from 'react-bootstrap/Container';
 import Stack from 'react-bootstrap/Stack';
 import { CoworkingEditForm } from '@/components/coworking-edit-form';
 import { FullPageError, FullPageLoader } from '@/components/page-state';
-import { TenantNav } from '@/components/tenant-nav';
+import { CoworkingNav } from '@/components/coworking-nav';
+import { useAppContext } from '@/features/context/use-app-context';
 import { requestJson } from '@/lib/client/api';
-import type { Coworking, CoworkingDashboard } from '@/types/coworking';
-import { useAdminSession } from '@/features/session/use-admin-session';
+import type { Coworking } from '@/types/coworking';
 
 export function CoworkingDetailsPageClient({ coworkingId }: { coworkingId: number }) {
-  const { session, isLoading: isSessionLoading, errorMessage: sessionError } = useAdminSession({ redirectToLogin: true });
+  const { context, isLoading: isContextLoading, errorMessage: contextError } = useAppContext({ coworkingId, redirectToLogin: true });
   const [coworking, setCoworking] = useState<Coworking | null>(null);
-  const [grantedActions, setGrantedActions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
-    Promise.all([
-      requestJson<Coworking>(`/api/coworkings/${coworkingId}`),
-      requestJson<CoworkingDashboard>(`/api/coworkings/${coworkingId}/dashboard`),
-    ])
-      .then(([coworkingData, dashboardData]) => {
+    requestJson<Coworking>(`/api/coworkings/${coworkingId}`)
+      .then((coworkingData) => {
         if (!isMounted) return;
         setCoworking(coworkingData);
-        setGrantedActions(dashboardData.grantedActions);
       })
       .catch((error) => {
         if (isMounted) setErrorMessage(error instanceof Error ? error.message : 'Unable to load coworking.');
@@ -45,20 +40,20 @@ export function CoworkingDetailsPageClient({ coworkingId }: { coworkingId: numbe
     };
   }, [coworkingId]);
 
-  if (isSessionLoading || isLoading) return <FullPageLoader label="Loading coworking details..." />;
-  if (sessionError) return <FullPageError message={sessionError} />;
-  if (!session) return <FullPageLoader label="Redirecting to login..." />;
+  if (isContextLoading || isLoading) return <FullPageLoader label="Loading coworking details..." />;
+  if (contextError) return <FullPageError message={contextError} />;
+  if (!context || context.coworkingId == null) return <FullPageLoader label="Redirecting to login..." />;
   if (errorMessage) return <FullPageError message={errorMessage} />;
   if (!coworking) return <FullPageError message="Coworking not found." />;
 
-  const canEdit = grantedActions.includes('UPDATE_COWORKING');
-  const canViewStaff = grantedActions.includes('VIEW_STAFF_ACCESS');
+  const canEdit = context.grants.includes('COWORKING_EDIT');
+  const canViewAccess = context.grants.includes('ACCESS_VIEW');
 
   return (
     <main className="page-shell">
       <Container className="py-4 py-md-5">
         <Stack gap={4}>
-          <TenantNav coworkingId={coworkingId} />
+          <CoworkingNav coworkingId={coworkingId} grants={context.grants} />
           <Card className="content-card">
             <CardBody>
               <CardTitle as="h1" className="mb-3">{coworking.name}</CardTitle>
@@ -66,8 +61,9 @@ export function CoworkingDetailsPageClient({ coworkingId }: { coworkingId: numbe
                 <Badge bg="secondary">Coworking ID: {coworking.id}</Badge>
                 <Badge bg={coworking.active ? 'success' : 'secondary'}>{coworking.active ? 'Active' : 'Inactive'}</Badge>
                 <Badge bg={coworking.archived ? 'dark' : 'info'}>{coworking.archived ? 'Archived' : 'Visible'}</Badge>
+                <Badge bg="info">{context.role}</Badge>
                 <Badge bg={canEdit ? 'primary' : 'light'} text={canEdit ? undefined : 'dark'}>{canEdit ? 'Editable' : 'Read only'}</Badge>
-                {canViewStaff ? <Badge bg="dark">Staff access visible</Badge> : null}
+                {canViewAccess ? <Badge bg="dark">Access visible</Badge> : null}
               </Stack>
             </CardBody>
           </Card>
@@ -79,7 +75,7 @@ export function CoworkingDetailsPageClient({ coworkingId }: { coworkingId: numbe
               </CardBody>
             </Card>
           ) : (
-            <Alert variant="secondary" className="mb-0">This subject can view coworking details but cannot edit tenant configuration.</Alert>
+            <Alert variant="secondary" className="mb-0">This subject can view coworking details but cannot edit coworking configuration.</Alert>
           )}
         </Stack>
       </Container>

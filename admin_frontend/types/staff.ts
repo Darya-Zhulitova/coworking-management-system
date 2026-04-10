@@ -1,29 +1,26 @@
-export type TenantAssignmentType = 'OWNER' | 'ROLE_ASSIGNED';
-export type TenantRoleCode = 'MANAGER' | 'STAFF_SUPPORT';
-
-export interface TenantStaffMember {
+export interface CoworkingAccessItem {
   accessId: number;
-  adminUserId: number;
+  adminId: number;
   email: string;
-  assignmentType: TenantAssignmentType;
-  role: TenantRoleCode | null;
-  owner: boolean;
+  name: string;
+  roleId: number;
+  roleName: string;
   active: boolean;
-  grantedActions: string[];
+  grants: string[];
 }
 
-export interface TenantRoleDefinition {
-  code: TenantRoleCode;
-  label: string;
-  grantedActions: string[];
+export interface CoworkingRoleDefinition {
+  roleId: number;
+  name: string;
+  grants: string[];
 }
 
-export interface AssignTenantRoleRequest {
+export interface AssignCoworkingRoleRequest {
   email: string;
-  role: TenantRoleCode;
+  roleId: number;
 }
 
-export interface UpdateTenantRoleRequest {
-  role: TenantRoleCode;
+export interface UpdateCoworkingRoleRequest {
+  roleId: number;
   active: boolean;
 }

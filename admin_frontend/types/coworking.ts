@@ -1,6 +1,7 @@
 export interface Coworking {
   id: number;
   name: string;
+  schedule: number;
   active: boolean;
   archived: boolean;
   configurationVersion: number;
@@ -11,15 +12,17 @@ export interface Coworking {
 
 export interface CreateCoworkingRequest {
   name: string;
+  schedule?: number;
 }
 
 export interface UpdateCoworkingRequest {
   name: string;
+  schedule?: number;
   active?: boolean;
 }
 
 export interface CoworkingDashboard {
   coworking: Coworking;
-  grantedActions: string[];
+  grants: string[];
   subjectLabel: string;
 }

@@ -1,7 +1,7 @@
 package com.hse.adminservice.service.internal;
 
 import com.hse.adminservice.authorization.AdminAuthorizationService;
-import com.hse.adminservice.authorization.EffectiveAdminAction;
+import com.hse.adminservice.entity.Grant;
 import com.hse.adminservice.dto.internal.CoworkingConfigSnapshotResponse;
 import com.hse.adminservice.entity.Coworking;
 import com.hse.adminservice.exception.ResourceNotFoundException;
@@ -25,7 +25,7 @@ public class CoworkingConfigSnapshotService {
     private final PlaceRepository placeRepository;
 
     public CoworkingConfigSnapshotResponse getSnapshot(Long coworkingId) {
-        authorizationService.requireCoworkingAction(coworkingId, EffectiveAdminAction.VIEW_PLACES);
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_VIEW);
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 

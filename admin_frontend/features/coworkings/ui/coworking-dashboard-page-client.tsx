@@ -11,13 +11,13 @@ import Row from 'react-bootstrap/Row';
 import Stack from 'react-bootstrap/Stack';
 import { LogoutButton } from '@/components/logout-button';
 import { FullPageError, FullPageLoader } from '@/components/page-state';
-import { TenantNav } from '@/components/tenant-nav';
+import { CoworkingNav } from '@/components/coworking-nav';
+import { useAppContext } from '@/features/context/use-app-context';
 import { requestJson } from '@/lib/client/api';
 import type { CoworkingDashboard } from '@/types/coworking';
-import { useAdminSession } from '@/features/session/use-admin-session';
 
-export function TenantDashboardPageClient({ coworkingId }: { coworkingId: number }) {
-  const { session, isLoading: isSessionLoading, errorMessage: sessionError } = useAdminSession({ redirectToLogin: true });
+export function CoworkingDashboardPageClient({ coworkingId }: { coworkingId: number }) {
+  const { context, isLoading: isContextLoading, errorMessage: contextError } = useAppContext({ coworkingId, redirectToLogin: true });
   const [dashboard, setDashboard] = useState<CoworkingDashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -40,9 +40,9 @@ export function TenantDashboardPageClient({ coworkingId }: { coworkingId: number
     };
   }, [coworkingId]);
 
-  if (isSessionLoading || isLoading) return <FullPageLoader label="Loading tenant dashboard..." />;
-  if (sessionError) return <FullPageError message={sessionError} />;
-  if (!session) return <FullPageLoader label="Redirecting to login..." />;
+  if (isContextLoading || isLoading) return <FullPageLoader label="Loading coworking dashboard..." />;
+  if (contextError) return <FullPageError message={contextError} />;
+  if (!context || context.coworkingId == null) return <FullPageLoader label="Redirecting to login..." />;
   if (errorMessage) return <FullPageError message={errorMessage} />;
   if (!dashboard) return <FullPageError message="Dashboard is unavailable." />;
 
@@ -50,14 +50,14 @@ export function TenantDashboardPageClient({ coworkingId }: { coworkingId: number
     <main className="page-shell">
       <Container className="py-4 py-md-5">
         <Stack gap={4}>
-          <TenantNav coworkingId={coworkingId} />
+          <CoworkingNav coworkingId={coworkingId} grants={context.grants} />
           <Card className="content-card">
             <Card.Body>
               <Stack direction="horizontal" className="justify-content-between align-items-start gap-3 flex-wrap mb-4">
                 <div>
-                  <Card.Title as="h1" className="mb-2">{dashboard.coworking.name} dashboard</Card.Title>
-                  <Card.Text className="mb-1">Tenant ID: {dashboard.coworking.id}</Card.Text>
-                  <Card.Text className="mb-0 text-body-secondary">Resolved subject: {dashboard.subjectLabel}</Card.Text>
+                  <Card.Title as="h1" className="mb-2">{context.coworkingName} dashboard</Card.Title>
+                  <Card.Text className="mb-1">Coworking ID: {context.coworkingId}</Card.Text>
+                  <Card.Text className="mb-0 text-body-secondary">Resolved access: {context.role}</Card.Text>
                 </div>
                 <LogoutButton />
               </Stack>
@@ -66,7 +66,7 @@ export function TenantDashboardPageClient({ coworkingId }: { coworkingId: number
                 <Col md={6}>
                   <Card bg="light">
                     <Card.Body>
-                      <Card.Title as="h2" className="h5">Tenant status</Card.Title>
+                      <Card.Title as="h2" className="h5">Coworking status</Card.Title>
                       <Stack direction="horizontal" gap={2} className="flex-wrap">
                         <Badge bg={dashboard.coworking.active ? 'success' : 'secondary'}>{dashboard.coworking.active ? 'Active' : 'Inactive'}</Badge>
                         <Badge bg={dashboard.coworking.archived ? 'dark' : 'info'}>{dashboard.coworking.archived ? 'Archived' : 'Visible'}</Badge>
@@ -76,15 +76,15 @@ export function TenantDashboardPageClient({ coworkingId }: { coworkingId: number
                 </Col>
               </Row>
 
-              <Card.Title as="h2" className="h4 mb-3">Granted tenant actions</Card.Title>
-              {dashboard.grantedActions.length > 0 ? (
-                <ListGroup>
-                  {dashboard.grantedActions.map((action) => (
-                    <ListGroup.Item key={action}>{action}</ListGroup.Item>
+              <Card.Title as="h2" className="h4 mb-3">Resolved grants</Card.Title>
+              {context.grants.length > 0 ? (
+                <ListGroup variant="flush">
+                  {context.grants.map((grant) => (
+                    <ListGroup.Item key={grant} className="px-0">{grant}</ListGroup.Item>
                   ))}
                 </ListGroup>
               ) : (
-                <Alert variant="secondary" className="mb-0">No tenant actions resolved for this subject.</Alert>
+                <Alert variant="secondary" className="mb-0">No grants resolved for this subject.</Alert>
               )}
             </Card.Body>
           </Card>

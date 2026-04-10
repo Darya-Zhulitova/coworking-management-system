@@ -18,13 +18,7 @@ export async function POST(request: Request) {
   try {
     const loginResponse = await loginAdmin({ email: payload.email.trim(), password: payload.password });
     await setAdminSession(loginResponse);
-    return NextResponse.json({
-      adminUserId: loginResponse.adminUserId,
-      superAdminId: loginResponse.superAdminId,
-      principalType: loginResponse.principalType,
-      coworkings: loginResponse.coworkings,
-      grantedGlobalActions: loginResponse.grantedGlobalActions,
-    });
+    return NextResponse.json({ adminId: loginResponse.adminId });
   } catch (error) {
     if (error instanceof BackendRequestError) {
       return NextResponse.json({ message: error.message }, { status: error.status || 500 });

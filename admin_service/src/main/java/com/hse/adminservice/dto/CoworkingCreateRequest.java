@@ -8,4 +8,6 @@ public class CoworkingCreateRequest {
 
     @NotBlank
     private String name;
+
+    private Integer schedule;
 }

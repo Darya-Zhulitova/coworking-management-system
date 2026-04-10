@@ -2,6 +2,7 @@ import 'server-only';
 
 import { env } from '@/lib/config/env';
 import type { AdminLoginRequest, AdminLoginResponse } from '@/types/auth';
+import type { AppContextDto } from '@/types/context';
 import type { Coworking, CoworkingDashboard, CreateCoworkingRequest, UpdateCoworkingRequest } from '@/types/coworking';
 import type {
   CoworkingConfigSnapshot,
@@ -13,7 +14,7 @@ import type {
   UpdatePlaceRequest,
   UpdatePlaceTypeRequest,
 } from '@/types/place';
-import type { AssignTenantRoleRequest, TenantRoleDefinition, TenantStaffMember, UpdateTenantRoleRequest } from '@/types/staff';
+import type { AssignCoworkingRoleRequest, CoworkingRoleDefinition, CoworkingAccessItem, UpdateCoworkingRoleRequest } from '@/types/staff';
 
 export class BackendRequestError extends Error {
   constructor(message: string, public readonly status: number, public readonly details?: unknown) {
@@ -61,6 +62,11 @@ export async function loginAdmin(payload: AdminLoginRequest): Promise<AdminLogin
   });
 }
 
+export async function getAppContext(token: string, coworkingId?: number): Promise<AppContextDto> {
+  const query = coworkingId == null ? '' : `?coworkingId=${coworkingId}`;
+  return requestBackend<AppContextDto>(`/context${query}`, undefined, token);
+}
+
 export async function getCoworkings(token: string, archived = false): Promise<Coworking[]> {
   return requestBackend<Coworking[]>(`/coworkings?archived=${archived ? 'true' : 'false'}`, undefined, token);
 }
@@ -93,31 +99,31 @@ export async function archiveCoworking(token: string, id: number): Promise<void>
   await requestBackend<void>(`/coworkings/${id}`, { method: 'DELETE' }, token);
 }
 
-export async function getTenantStaff(token: string, coworkingId: number): Promise<TenantStaffMember[]> {
-  return requestBackend<TenantStaffMember[]>(`/coworkings/${coworkingId}/staff`, undefined, token);
+export async function getCoworkingAccessList(token: string, coworkingId: number): Promise<CoworkingAccessItem[]> {
+  return requestBackend<CoworkingAccessItem[]>(`/coworkings/${coworkingId}/staff`, undefined, token);
 }
 
-export async function getTenantRoles(token: string, coworkingId: number): Promise<TenantRoleDefinition[]> {
-  return requestBackend<TenantRoleDefinition[]>(`/coworkings/${coworkingId}/staff/roles`, undefined, token);
+export async function getCoworkingRoles(token: string, coworkingId: number): Promise<CoworkingRoleDefinition[]> {
+  return requestBackend<CoworkingRoleDefinition[]>(`/coworkings/${coworkingId}/staff/roles`, undefined, token);
 }
 
-export async function assignTenantRole(token: string, coworkingId: number, payload: AssignTenantRoleRequest): Promise<TenantStaffMember> {
-  return requestBackend<TenantStaffMember>(`/coworkings/${coworkingId}/staff`, {
+export async function assignCoworkingRole(token: string, coworkingId: number, payload: AssignCoworkingRoleRequest): Promise<CoworkingAccessItem> {
+  return requestBackend<CoworkingAccessItem>(`/coworkings/${coworkingId}/staff`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   }, token);
 }
 
-export async function updateTenantRole(token: string, coworkingId: number, accessId: number, payload: UpdateTenantRoleRequest): Promise<TenantStaffMember> {
-  return requestBackend<TenantStaffMember>(`/coworkings/${coworkingId}/staff/${accessId}`, {
+export async function updateCoworkingRole(token: string, coworkingId: number, accessId: number, payload: UpdateCoworkingRoleRequest): Promise<CoworkingAccessItem> {
+  return requestBackend<CoworkingAccessItem>(`/coworkings/${coworkingId}/staff/${accessId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   }, token);
 }
 
-export async function deactivateTenantAccess(token: string, coworkingId: number, accessId: number): Promise<void> {
+export async function deactivateCoworkingAccess(token: string, coworkingId: number, accessId: number): Promise<void> {
   await requestBackend<void>(`/coworkings/${coworkingId}/staff/${accessId}`, { method: 'DELETE' }, token);
 }
 

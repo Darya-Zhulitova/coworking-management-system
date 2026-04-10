@@ -11,6 +11,7 @@ public class CoworkingMapper {
         return CoworkingResponse.builder()
                 .id(coworking.getId())
                 .name(coworking.getName())
+                .schedule(coworking.getSchedule())
                 .active(coworking.getActive())
                 .archived(coworking.getArchived())
                 .configurationVersion(coworking.getConfigurationVersion())

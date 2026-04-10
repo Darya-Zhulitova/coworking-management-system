@@ -9,5 +9,7 @@ public class CoworkingUpdateRequest {
     @NotBlank
     private String name;
 
+    private Integer schedule;
+
     private Boolean active;
 }

@@ -7,8 +7,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "admin_coworking_access", uniqueConstraints = @UniqueConstraint(
-        name = "uk_admin_coworking_access_admin_coworking", columnNames = {"admin_user_id", "coworking_id"}
+        name = "access", uniqueConstraints = @UniqueConstraint(
+        name = "uk_access_admin_coworking", columnNames = {"admin_id", "coworking_id"}
 )
 )
 @Getter
@@ -16,29 +16,25 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AdminCoworkingAccess {
+public class Access {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "admin_user_id", nullable = false)
-    private AdminUser adminUser;
+    @JoinColumn(name = "admin_id", nullable = false)
+    private Admin admin;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "coworking_id", nullable = false)
     private Coworking coworking;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AdminCoworkingAssignmentType assignmentType;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "role_id", nullable = false)
+    private Role role;
 
-    @Enumerated(EnumType.STRING)
-    @Column
-    private AdminCoworkingRole role;
-
-    @Column(nullable = false)
+    @Column(name = "is_active", nullable = false)
     private Boolean active;
 
     @Column(nullable = false, updatable = false)

@@ -1,15 +1,14 @@
 package com.hse.adminservice.dto;
 
-import com.hse.adminservice.entity.AdminCoworkingRole;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class UpdateTenantRoleRequest {
+public class UpdateCoworkingRoleRequest {
     @NotNull
-    private AdminCoworkingRole role;
+    private Long roleId;
 
     @NotNull
     private Boolean active;

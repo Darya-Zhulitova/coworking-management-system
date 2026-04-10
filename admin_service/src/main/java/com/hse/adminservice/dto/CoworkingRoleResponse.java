@@ -6,9 +6,9 @@ import lombok.Builder;
 import java.util.Set;
 
 @Builder
-public record CoworkingDashboardResponse(
-        CoworkingResponse coworking,
-        Set<Grant> grants,
-        String subjectLabel
+public record CoworkingRoleResponse(
+        Long roleId,
+        String name,
+        Set<Grant> grants
 ) {
 }

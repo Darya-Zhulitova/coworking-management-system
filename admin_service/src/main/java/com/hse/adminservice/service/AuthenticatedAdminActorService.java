@@ -25,8 +25,4 @@ public class AuthenticatedAdminActorService {
     public Long getSubjectId() {
         return getCurrentPrincipal().getSubjectId();
     }
-
-    public boolean isSuperAdmin() {
-        return getPrincipalType() == AdminPrincipalType.SUPERADMIN;
-    }
 }
