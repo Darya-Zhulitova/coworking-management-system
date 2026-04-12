@@ -137,4 +137,30 @@ export type CartCalculationSummary = {
   totalFinalPrice: number;
   unavailableCount: number;
   discountHints: string[];
+}
+
+export type UserCoworkingDetails = {
+  id: number;
+  name: string;
+  description: string;
+  address: string;
+  workingHoursLabel: string;
+  heroTitle?: string | null;
+  heroText?: string | null;
+  imageUrls: string[];
+  autoApproveMembership: boolean;
+  active: boolean;
+  membershipId?: number | null;
+  membershipStatus?: MembershipStatus | null;
+  balanceMinorUnits?: number | null;
+};
+
+export type CoworkingShellContext = {
+  user: UserProfile;
+  coworking: UserCoworkingDetails;
+  membership: {
+    id: number | null;
+    status: MembershipStatus | null;
+    balanceMinorUnits: number;
+  };
 };

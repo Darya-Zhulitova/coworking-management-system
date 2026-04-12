@@ -5,65 +5,15 @@ body {
 
 body {
   margin: 0;
-  padding-bottom: 5.5rem;
+  background-color: var(--bs-tertiary-bg);
 }
 
 a {
   text-decoration: none;
 }
 
-.nav::-webkit-scrollbar {
-  display: none;
-}
-
-.header-surface {
-  backdrop-filter: blur(8px);
-}
 
 .app-main-shell {
-  padding-bottom: 5rem;
+  padding-bottom: 0;
 }
 
-.mobile-bottom-nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1030;
-}
-
-.mobile-bottom-link {
-  min-height: 4.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  text-decoration: none;
-  color: var(--bs-secondary-color);
-}
-
-.mobile-bottom-link.active {
-  color: var(--bs-emphasis-color);
-  font-weight: 600;
-}
-
-.mobile-bottom-icon {
-  font-size: 1.125rem;
-  line-height: 1;
-}
-
-.mobile-bottom-label {
-  font-size: 0.72rem;
-  line-height: 1;
-}
-
-@media (min-width: 768px) {
-  body {
-    padding-bottom: 0;
-  }
-
-  .app-main-shell {
-    padding-bottom: 0;
-  }
-}

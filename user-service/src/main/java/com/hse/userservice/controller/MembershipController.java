@@ -2,6 +2,7 @@ package com.hse.userservice.controller;
 
 import com.hse.userservice.dto.request.CreateMembershipDto;
 import com.hse.userservice.dto.response.MembershipDto;
+import com.hse.userservice.dto.response.UserMembershipSummaryDto;
 import com.hse.userservice.service.MembershipService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,24 +12,22 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/memberships")
 @RequiredArgsConstructor
 public class MembershipController {
-
     private final MembershipService membershipService;
 
-    @PostMapping
+    @PostMapping("/api/memberships")
     @ResponseStatus(HttpStatus.CREATED)
     public MembershipDto create(@Valid @RequestBody CreateMembershipDto dto) {
         return membershipService.create(dto);
     }
 
-    @GetMapping
-    public List<MembershipDto> getAll() {
-        return membershipService.getAll();
+    @GetMapping("/api/users/me/memberships")
+    public List<UserMembershipSummaryDto> getCurrentUserMemberships() {
+        return membershipService.getCurrentUserMemberships();
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/api/memberships/{id}")
     public MembershipDto getById(@PathVariable Long id) {
         return membershipService.getById(id);
     }

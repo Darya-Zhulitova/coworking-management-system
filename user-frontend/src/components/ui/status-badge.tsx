@@ -1,24 +1,24 @@
-import {MembershipStatus, PayRequestStatus, ServiceRequestStatus} from '@/lib/types';
+import { MembershipStatus, PayRequestStatus, ServiceRequestStatus } from '@/lib/types';
 
 type StatusValue = MembershipStatus | PayRequestStatus | ServiceRequestStatus;
 
 const styles: Record<StatusValue, string> = {
   active: 'text-bg-success',
-  pending: 'text-bg-warning',
+  pending: 'text-bg-secondary',
   blocked: 'text-bg-danger',
-  Pending: 'text-bg-warning',
+  Pending: 'text-bg-secondary',
   Approved: 'text-bg-success',
   Rejected: 'text-bg-danger',
   new: 'text-bg-primary',
-  in_progress: 'text-bg-info',
+  in_progress: 'text-bg-secondary',
   resolved: 'text-bg-success',
   rejected: 'text-bg-danger',
 };
 
 const labels: Record<StatusValue, string> = {
   active: 'Активно',
-  pending: 'Ожидание',
-  blocked: 'Заблокировано',
+  pending: 'Ожидает подтверждения',
+  blocked: 'Доступ заблокирован',
   Pending: 'На рассмотрении',
   Approved: 'Подтверждено',
   Rejected: 'Отклонено',
@@ -28,6 +28,6 @@ const labels: Record<StatusValue, string> = {
   rejected: 'Отклонена',
 };
 
-export function StatusBadge({status}: { status: StatusValue }) {
-  return <span className={`badge ${styles[status]}`}>{labels[status]}</span>;
+export function StatusBadge({ status }: { status: StatusValue }) {
+  return <span className={`badge fw-medium ${styles[status]}`}>{labels[status]}</span>;
 }

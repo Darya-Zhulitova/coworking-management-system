@@ -5,11 +5,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_memberships")
+@Table(
+        name = "user_memberships",
+        uniqueConstraints = {@UniqueConstraint(
+                name = "uk_membership_user_coworking",
+                columnNames = {"user_id", "coworking_id"}
+        )}
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,16 +23,20 @@ public class Membership {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long coworkingId;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
-    @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal balance = BigDecimal.ZERO;
+    @Column(name = "coworking_id", nullable = false)
+    private Long coworkingId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
-    private MembershipStatus status = MembershipStatus.ACTIVE;
+    private MembershipStatus status = MembershipStatus.PENDING;
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    private LocalDateTime approvedAt;
+
+    private LocalDateTime blockedAt;
 }
