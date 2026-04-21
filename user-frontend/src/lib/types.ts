@@ -1,5 +1,5 @@
 export type MembershipStatus = 'active' | 'pending' | 'blocked';
-export type BookingStatusTab = 'active' | 'history';
+export type BookingPersistedStatus = 'ACTUAL' | 'CANCELED_ADMIN' | 'CANCELED_USER';
 export type LedgerType =
   | 'DEPOSIT'
   | 'WITHDRAWAL'
@@ -8,7 +8,7 @@ export type LedgerType =
   | 'DAY_CLOSURE_COMPENSATION'
   | 'MEMBERSHIP_BLOCK_COMPENSATION'
   | 'SERVICE_REQUEST_CHARGE';
-export type PayRequestStatus = 'Pending' | 'Approved' | 'Rejected';
+export type PayRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type ServiceRequestStatus = 'new' | 'in_progress' | 'resolved' | 'rejected';
 export type MessageAuthorType = 'USER' | 'ADMIN' | 'SYSTEM';
 
@@ -30,37 +30,19 @@ export type MembershipSummary = {
   balance: number;
 };
 
-export type CoworkingSummary = {
-  id: number;
-  name: string;
-  scheduleLabel: string;
-  address: string;
-  heroTitle: string;
-  heroText: string;
-  autoApproveMembership: boolean;
-};
-
-export type Place = {
-  id: number;
-  coworkingId: number;
-  name: string;
-  floor: string;
-  floorId: number;
-  typeName: string;
-  tariffId: number;
-  pricePerDay: number;
-  amenities: string[];
-  available: boolean;
-};
-
 export type Booking = {
   id: number;
   coworkingId: number;
+  placeId?: number;
   requestId: string;
   placeName: string;
   date: string;
   cost: number;
   active: boolean;
+  status: BookingPersistedStatus;
+  tariffId?: number;
+  pricePerDay?: number;
+  appliedDiscountPercent?: number;
   fullRefundHoursBefore: number;
   lateCancellationRefundPercent: number;
   cancellationPreview?: number;
@@ -88,34 +70,73 @@ export type PayRequest = {
 export type ServiceRequest = {
   id: number;
   coworkingId: number;
+  membershipId?: number;
+  typeId?: number;
   name: string;
   typeName: string;
   cost: number;
   status: ServiceRequestStatus;
   createdAt: string;
   updatedAt: string;
-};
-
-export type RequestMessage = {
-  id: number;
-  requestId: number;
-  authorType: MessageAuthorType;
-  authorName: string;
-  text: string;
-  timestamp: string;
-  readAt?: string;
-};
-
-export type ServiceRequestTypeOption = {
-  id: number;
-  coworkingId: number;
-  name: string;
-  cost: number;
+  resolvedAt?: string;
 };
 
 export type BookingCartItem = {
   placeId: number;
   date: string;
+};
+
+export type BookingInitFloor = {
+  id: number;
+  name: string;
+  index: number;
+};
+
+export type BookingInitPlaceType = {
+  id: number;
+  name: string;
+  tariffId: number;
+};
+
+export type BookingInitTariffDiscountRule = {
+  id: number;
+  thresholdQuantity: number;
+  discountPercent: number;
+};
+
+export type BookingInitTariff = {
+  id: number;
+  name: string;
+  pricePerDay: number;
+  minBookingDays: number;
+  discountRules: BookingInitTariffDiscountRule[];
+};
+
+export type BookingInitPlace = {
+  id: number;
+  name: string;
+  floorId: number;
+  floorName: string;
+  placeTypeId: number;
+  placeTypeName: string;
+  tariffId: number;
+  pricePerDay: number;
+  amenities: string[];
+  active: boolean;
+  previewAvailable: boolean;
+};
+
+export type BookingInitData = {
+  coworkingId: number;
+  coworkingName: string;
+  membershipId: number;
+  membershipStatus: MembershipStatus;
+  balanceMinorUnits: number;
+  previewDate: string;
+  floors: BookingInitFloor[];
+  placeTypes: BookingInitPlaceType[];
+  tariffs: BookingInitTariff[];
+  places: BookingInitPlace[];
 };
 
 export type CartCalculatedItem = {
@@ -124,6 +145,7 @@ export type CartCalculatedItem = {
   date: string;
   floor: string;
   typeName: string;
+  tariffId: number;
   basePrice: number;
   discountPercent: number;
   discountAmount: number;
@@ -137,7 +159,25 @@ export type CartCalculationSummary = {
   totalFinalPrice: number;
   unavailableCount: number;
   discountHints: string[];
-}
+  validationErrors: string[];
+  hasEnoughBalance: boolean;
+  balanceAfterMinorUnits: number;
+  canCheckout: boolean;
+};
+
+export type CartCalculation = {
+  coworkingId: number;
+  items: CartCalculatedItem[];
+  summary: CartCalculationSummary;
+};
+
+export type CheckoutResult = {
+  coworkingId: number;
+  requestId: string;
+  totalChargedMinorUnits: number;
+  balanceAfterMinorUnits: number;
+  bookings: Booking[];
+};
 
 export type UserCoworkingDetails = {
   id: number;

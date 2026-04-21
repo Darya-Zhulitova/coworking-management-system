@@ -1,6 +1,7 @@
 package com.hse.userservice.controller;
 
 import com.hse.userservice.dto.request.CreateMembershipDto;
+import com.hse.userservice.dto.response.CoworkingDetailsDto;
 import com.hse.userservice.dto.response.MembershipDto;
 import com.hse.userservice.dto.response.UserMembershipSummaryDto;
 import com.hse.userservice.service.MembershipService;
@@ -30,5 +31,10 @@ public class MembershipController {
     @GetMapping("/api/memberships/{id}")
     public MembershipDto getById(@PathVariable Long id) {
         return membershipService.getById(id);
+    }
+
+    @GetMapping("/api/coworkings/{coworkingId}")
+    public CoworkingDetailsDto getCoworking(@PathVariable Long coworkingId) {
+        return membershipService.getCoworkingDetails(coworkingId);
     }
 }

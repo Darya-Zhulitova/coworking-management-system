@@ -1,9 +1,11 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { formatMoney } from '@/lib/format';
+import { ThemeToggleButton } from '@/components/theme/theme-toggle-button';
 import { useCoworkingShellContext } from '@/components/layout/coworking-shell-context';
 
 type NavItem = {
@@ -120,6 +122,7 @@ export function AppHeader() {
                     {balanceLabel}
                   </Link>
                 ) : null}
+                <ThemeToggleButton/>
               </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 package com.hse.userservice.controller;
 
 import com.hse.userservice.dto.response.ErrorResponse;
+import com.hse.userservice.exception.ExternalServiceException;
 import com.hse.userservice.exception.ResourceConflictException;
 import com.hse.userservice.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -56,6 +57,17 @@ public class GlobalExceptionHandler {
                 HttpStatus.UNAUTHORIZED.value(),
                 "Unauthorized",
                 List.of("Invalid email or password.")
+        );
+    }
+
+    @ExceptionHandler(ExternalServiceException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public ErrorResponse handleExternalService(ExternalServiceException ex) {
+        return new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "Service Unavailable",
+                List.of(ex.getMessage())
         );
     }
 

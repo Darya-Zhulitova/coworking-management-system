@@ -7,11 +7,14 @@ import java.time.LocalDateTime;
 public record ServiceRequestDto(
         Long id,
         Long membershipId,
-        Long placeId,
-        Long bookingId,
-        String category,
-        String description,
+        Long typeId,
+        Long coworkingId,
+        String name,
+        String typeName,
+        Integer cost,
         ServiceRequestStatus status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt,
+        LocalDateTime resolvedAt
 ) {
 }

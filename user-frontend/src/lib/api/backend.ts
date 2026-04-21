@@ -1,7 +1,16 @@
 import 'server-only';
 
 import { env } from '@/lib/config/env';
-import type { MembershipSummary, UserCoworkingDetails, UserProfile, } from '@/lib/types';
+import type {
+  Booking,
+  BookingCartItem,
+  BookingInitData,
+  CartCalculation,
+  CheckoutResult,
+  MembershipSummary,
+  UserCoworkingDetails,
+  UserProfile,
+} from '@/lib/types';
 import type { UserAuthResponse, UserLoginRequest, UserRegisterRequest } from '@/types/auth';
 
 export class BackendRequestError extends Error {
@@ -103,4 +112,220 @@ export async function getCurrentUserMemberships(token: string): Promise<Membersh
     address: item.address,
     balance: typeof item.balance === 'string' ? Number(item.balance) * 100 : Number(item.balance) * 100,
   }));
+}
+
+export interface BackendLedgerEntry {
+  id: number;
+  coworkingId: number;
+  timestamp: string;
+  type: import('@/lib/types').LedgerType;
+  name: string;
+  comment: string;
+  amount: number;
+}
+
+export interface BackendPayRequest {
+  id: number;
+  coworkingId: number;
+  amount: number;
+  status: import('@/lib/types').PayRequestStatus;
+  userComment: string;
+  adminComment?: string | null;
+  createdAt: string;
+}
+
+export interface BackendBalanceDetails {
+  membershipId: number;
+  coworkingId: number;
+  membershipStatus: import('@/lib/types').MembershipStatus | Uppercase<import('@/lib/types').MembershipStatus>;
+  balanceMinorUnits: number;
+  ledger: BackendLedgerEntry[];
+  payRequests: BackendPayRequest[];
+}
+
+export async function getBalanceDetails(coworkingId: number, token: string): Promise<BackendBalanceDetails> {
+  return requestBackend<BackendBalanceDetails>(`/api/coworkings/${coworkingId}/balance`, undefined, token);
+}
+
+export async function createPayRequest(payload: {
+  coworkingId: number;
+  amount: number;
+  userComment: string
+}, token: string): Promise<BackendPayRequest> {
+  return requestBackend<BackendPayRequest>('/api/pay-requests', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export interface BackendBookingListItem {
+  id: number;
+  coworkingId: number;
+  placeId: number;
+  placeName: string;
+  date: string;
+  cost: number;
+  active: boolean;
+  status: import('@/lib/types').BookingPersistedStatus;
+  requestId: string;
+  tariffId: number;
+  pricePerDay: number;
+  appliedDiscountPercent: number;
+  fullRefundHoursBefore: number;
+  lateCancellationRefundPercent: number;
+  cancellationPreviewMinorUnits: number;
+}
+
+export interface BackendCreateFromCartResponse {
+  coworkingId: number;
+  requestId: string;
+  totalChargedMinorUnits: number;
+  balanceAfterMinorUnits: number;
+  bookings: BackendBookingListItem[];
+}
+
+export interface BackendCancelBookingResponse {
+  bookingId: number;
+  coworkingId: number;
+  refundMinorUnits: number;
+  balanceAfterMinorUnits: number;
+  booking: BackendBookingListItem;
+}
+
+function mapBooking(item: BackendBookingListItem): Booking {
+  return {
+    id: item.id,
+    coworkingId: item.coworkingId,
+    placeId: item.placeId,
+    requestId: item.requestId,
+    placeName: item.placeName,
+    date: item.date,
+    cost: item.cost,
+    active: item.active,
+    status: item.status,
+    tariffId: item.tariffId,
+    pricePerDay: item.pricePerDay,
+    appliedDiscountPercent: item.appliedDiscountPercent,
+    fullRefundHoursBefore: item.fullRefundHoursBefore,
+    lateCancellationRefundPercent: item.lateCancellationRefundPercent,
+    cancellationPreview: item.cancellationPreviewMinorUnits,
+  };
+}
+
+export async function getBookingInit(coworkingId: number, token: string, date?: string): Promise<BookingInitData> {
+  const query = date ? `?date=${encodeURIComponent(date)}` : '';
+  return requestBackend<BookingInitData>(`/api/coworkings/${coworkingId}/booking/init${query}`, undefined, token);
+}
+
+export async function getBookings(coworkingId: number, token: string): Promise<Booking[]> {
+  const data = await requestBackend<BackendBookingListItem[]>(`/api/coworkings/${coworkingId}/bookings`, undefined, token);
+  return data.map(mapBooking);
+}
+
+export async function calculateBookingCart(payload: {
+  coworkingId: number;
+  items: BookingCartItem[]
+}, token: string): Promise<CartCalculation> {
+  return requestBackend<CartCalculation>('/api/bookings/cart/calculate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function createBookingsFromCart(payload: {
+  coworkingId: number;
+  items: BookingCartItem[]
+}, token: string): Promise<CheckoutResult> {
+  const data = await requestBackend<BackendCreateFromCartResponse>('/api/bookings/create-from-cart', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, token);
+  return {
+    coworkingId: data.coworkingId,
+    requestId: data.requestId,
+    totalChargedMinorUnits: data.totalChargedMinorUnits,
+    balanceAfterMinorUnits: data.balanceAfterMinorUnits,
+    bookings: data.bookings.map(mapBooking),
+  };
+}
+
+export interface BackendServiceRequest {
+  id: number;
+  membershipId: number;
+  typeId: number;
+  coworkingId: number;
+  name: string;
+  typeName: string;
+  cost: number;
+  status: import('@/lib/types').ServiceRequestStatus | Uppercase<import('@/lib/types').ServiceRequestStatus>;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string | null;
+}
+
+export interface BackendServiceRequestMessage {
+  id: number;
+  requestId: number;
+  authorType: import('@/lib/types').MessageAuthorType;
+  authorName: string;
+  text: string;
+  timestamp: string;
+  readAt?: string | null;
+}
+
+export interface BackendServiceRequestTypeOption {
+  id: number;
+  coworkingId: number;
+  name: string;
+  cost: number;
+}
+
+export async function getServiceRequests(coworkingId: number, token: string): Promise<BackendServiceRequest[]> {
+  return requestBackend<BackendServiceRequest[]>(`/api/coworkings/${coworkingId}/service-requests`, undefined, token);
+}
+
+export async function getServiceRequestTypes(coworkingId: number, token: string): Promise<BackendServiceRequestTypeOption[]> {
+  return requestBackend<BackendServiceRequestTypeOption[]>(`/api/coworkings/${coworkingId}/service-request-types`, undefined, token);
+}
+
+export async function getServiceRequest(coworkingId: number, requestId: number, token: string): Promise<BackendServiceRequest> {
+  return requestBackend<BackendServiceRequest>(`/api/coworkings/${coworkingId}/service-requests/${requestId}`, undefined, token);
+}
+
+export async function getServiceRequestMessages(coworkingId: number, requestId: number, token: string): Promise<BackendServiceRequestMessage[]> {
+  return requestBackend<BackendServiceRequestMessage[]>(`/api/coworkings/${coworkingId}/service-requests/${requestId}/messages`, undefined, token);
+}
+
+export async function createServiceRequest(payload: {
+  coworkingId: number;
+  typeId: number;
+  name: string
+}, token: string): Promise<BackendServiceRequest> {
+  return requestBackend<BackendServiceRequest>('/api/service-requests', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function createServiceRequestMessage(payload: {
+  coworkingId: number;
+  requestId: number;
+  text: string
+}, token: string): Promise<BackendServiceRequestMessage> {
+  return requestBackend<BackendServiceRequestMessage>(`/api/service-requests/${payload.requestId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ coworkingId: payload.coworkingId, text: payload.text }),
+  }, token);
+}
+
+
+export async function cancelBooking(coworkingId: number, bookingId: number, token: string): Promise<BackendCancelBookingResponse> {
+  return requestBackend<BackendCancelBookingResponse>(`/api/coworkings/${coworkingId}/bookings/${bookingId}/cancel`, {
+    method: 'POST',
+  }, token);
 }

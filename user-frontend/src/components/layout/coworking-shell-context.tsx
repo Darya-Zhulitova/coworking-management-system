@@ -47,6 +47,13 @@ export function CoworkingShellProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     try {
+      if (coworkingId) {
+        const data = await requestJson<CoworkingShellContext>(`/api/coworkings/${coworkingId}/me/context`);
+        setContext(data);
+        setProfile(data.user);
+        return;
+      }
+
       setContext(null);
       const data = await requestJson<UserProfile>('/api/users/me');
       setProfile(data);
@@ -56,7 +63,7 @@ export function CoworkingShellProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [pathname]);
+  }, [coworkingId, pathname]);
 
   useEffect(() => {
     void refreshContext();
