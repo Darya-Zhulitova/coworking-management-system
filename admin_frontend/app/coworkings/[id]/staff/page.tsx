@@ -5,5 +5,5 @@ export default async function CoworkingStaffPage({ params }: { params: Promise<{
   const { id } = await params;
   const coworkingId = Number(id);
   if (!Number.isInteger(coworkingId)) notFound();
-  return <CoworkingStaffPageClient coworkingId={coworkingId} />;
+  return <CoworkingStaffPageClient coworkingId={coworkingId}/>;
 }

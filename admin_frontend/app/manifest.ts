@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Coworking Admin',
-    short_name: 'Admin',
-    description: 'Admin app for coworking management.',
+    name: 'SpaceBooking Manager',
+    short_name: 'SpaceBooking Manager',
+    description: 'Приложение для управления коворкингами.',
     id: '/',
     start_url: '/',
     scope: '/',

@@ -10,75 +10,65 @@ import Container from 'react-bootstrap/Container';
 import Stack from 'react-bootstrap/Stack';
 import { CoworkingEditForm } from '@/components/coworking-edit-form';
 import { FullPageError, FullPageLoader } from '@/components/page-state';
-import { CoworkingNav } from '@/components/coworking-nav';
 import { useAppContext } from '@/features/context/use-app-context';
 import { requestJson } from '@/lib/client/api';
 import type { Coworking } from '@/types/coworking';
 
 export function CoworkingDetailsPageClient({ coworkingId }: { coworkingId: number }) {
-  const { context, isLoading: isContextLoading, errorMessage: contextError } = useAppContext({ coworkingId, redirectToLogin: true });
+  const { context, isLoading: isContextLoading, errorMessage: contextError } = useAppContext({
+    coworkingId,
+    redirectToLogin: true
+  });
   const [coworking, setCoworking] = useState<Coworking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
-    requestJson<Coworking>(`/api/coworkings/${coworkingId}`)
-      .then((coworkingData) => {
-        if (!isMounted) return;
-        setCoworking(coworkingData);
-      })
-      .catch((error) => {
-        if (isMounted) setErrorMessage(error instanceof Error ? error.message : 'Unable to load coworking.');
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
-      });
-
+    requestJson<Coworking>(`/api/coworkings/${coworkingId}`).then((coworkingData) => {
+      if (!isMounted) return;
+      setCoworking(coworkingData);
+    }).catch((error) => {
+      if (isMounted) setErrorMessage(error instanceof Error ? error.message : 'Не удалось загрузить коворкинг.');
+    }).finally(() => {
+      if (isMounted) setIsLoading(false);
+    });
     return () => {
       isMounted = false;
     };
   }, [coworkingId]);
 
-  if (isContextLoading || isLoading) return <FullPageLoader label="Loading coworking details..." />;
-  if (contextError) return <FullPageError message={contextError} />;
-  if (!context || context.coworkingId == null) return <FullPageLoader label="Redirecting to login..." />;
-  if (errorMessage) return <FullPageError message={errorMessage} />;
-  if (!coworking) return <FullPageError message="Coworking not found." />;
+  if (isContextLoading || isLoading) return <FullPageLoader label="Загрузка данных о коворкинге..."/>;
+  if (contextError) return <FullPageError message={contextError}/>;
+  if (!context || context.coworkingId == null) return <FullPageLoader label="Переход на страницу входа..."/>;
+  if (errorMessage) return <FullPageError message={errorMessage}/>;
+  if (!coworking) return <FullPageError message="Коворкинг не найден."/>;
 
   const canEdit = context.grants.includes('COWORKING_EDIT');
-  const canViewAccess = context.grants.includes('ACCESS_VIEW');
+  const canViewAccess = context.grants.includes('ACCESS_READ');
 
-  return (
-    <main className="page-shell">
-      <Container className="py-4 py-md-5">
-        <Stack gap={4}>
-          <CoworkingNav coworkingId={coworkingId} grants={context.grants} />
-          <Card className="content-card">
-            <CardBody>
-              <CardTitle as="h1" className="mb-3">{coworking.name}</CardTitle>
-              <Stack direction="horizontal" gap={2} className="flex-wrap mb-3">
-                <Badge bg="secondary">Coworking ID: {coworking.id}</Badge>
-                <Badge bg={coworking.active ? 'success' : 'secondary'}>{coworking.active ? 'Active' : 'Inactive'}</Badge>
-                <Badge bg={coworking.archived ? 'dark' : 'info'}>{coworking.archived ? 'Archived' : 'Visible'}</Badge>
-                <Badge bg="info">{context.role}</Badge>
-                <Badge bg={canEdit ? 'primary' : 'light'} text={canEdit ? undefined : 'dark'}>{canEdit ? 'Editable' : 'Read only'}</Badge>
-                {canViewAccess ? <Badge bg="dark">Access visible</Badge> : null}
-              </Stack>
-            </CardBody>
-          </Card>
-          {canEdit ? (
-            <Card className="content-card">
-              <CardBody>
-                <CardTitle as="h2" className="h4 mb-3">Edit coworking</CardTitle>
-                <CoworkingEditForm coworking={coworking} />
-              </CardBody>
-            </Card>
-          ) : (
-            <Alert variant="secondary" className="mb-0">This subject can view coworking details but cannot edit coworking configuration.</Alert>
-          )}
-        </Stack>
-      </Container>
-    </main>
-  );
+  return <main className="page-shell"><Container className="py-4 py-md-5"><Stack gap={4}><h2
+    className="mb-0">{coworking.name}</h2><Card
+    className="content-card"><CardBody>
+    <div className="mb-3 text-body-secondary">{coworking.address}</div>
+    <div className="mb-3 fw-semibold">{coworking.workingHoursLabel}</div>
+    {coworking.heroTitle ?
+      <div className="mb-2 fs-5 fw-semibold">{coworking.heroTitle}</div> : null}{coworking.heroText ?
+    <div className="mb-3 text-body-secondary">{coworking.heroText}</div> : null}
+    <div className="mb-3">{coworking.description}</div>
+    {coworking.imageUrls.length > 0 ? <div className="mb-3">
+      <div className="fw-semibold mb-2">Ссылки на изображения</div>
+      <Stack gap={2}>{coworking.imageUrls.map((imageUrl, index) => <div key={`${coworking.id}-${index}`}
+                                                                        className="small">{index + 1}. {imageUrl}</div>)}</Stack>
+    </div> : null}
+    <Stack direction="horizontal" gap={2} className="flex-wrap mb-3"><Badge bg="secondary">ID
+      коворкинга: {coworking.id}</Badge><Badge
+      bg={coworking.active ? 'success' : 'secondary'}>{coworking.active ? 'Активен' : 'Неактивен'}</Badge><Badge
+      bg={coworking.archived ? 'dark' : 'info'}>{coworking.archived ? 'В архиве' : 'Показывается'}</Badge><Badge
+      bg={coworking.autoApproveMembership ? 'success' : 'warning'}>{coworking.autoApproveMembership ? 'Автоподтверждение включено' : 'Подтверждение участия вручную'}</Badge>
+    </Stack></CardBody></Card>{canEdit ?
+    <Card className="content-card"><CardBody><CardTitle as="h2" className="h4 mb-3">Редактирование
+      коворкинга</CardTitle><CoworkingEditForm coworking={coworking}/></CardBody></Card> :
+    <Alert variant="secondary" className="mb-0">Эта учётная запись может просматривать данные коворкинга, но не
+      может изменять его конфигурацию.</Alert>}</Stack></Container></main>;
 }

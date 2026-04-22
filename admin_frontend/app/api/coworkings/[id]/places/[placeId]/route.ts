@@ -10,17 +10,22 @@ function parseId(value: string): number | null {
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string; placeId: string }> }) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
-  const { id, placeId } = await params;
+  const { id, placeId: placeIdRaw } = await params;
   const coworkingId = parseId(id);
-  const parsedPlaceId = parseId(placeId);
-  if (coworkingId == null || parsedPlaceId == null) return NextResponse.json({ message: 'Invalid identifiers.' }, { status: 400 });
-  let payload: { name?: string; placeTypeId?: number; active?: boolean };
-  try { payload = await request.json() as { name?: string; placeTypeId?: number; active?: boolean }; } catch { return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 }); }
+  const placeId = parseId(placeIdRaw);
+  if (coworkingId == null || placeId == null) return NextResponse.json({ message: 'Invalid place path.' }, { status: 400 });
+  let payload: { name?: string; locX?: number; locY?: number; active?: boolean };
+  try {
+    payload = await request.json() as { name?: string; locX?: number; locY?: number; active?: boolean };
+  } catch {
+    return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
+  }
   if (!payload.name?.trim()) return NextResponse.json({ message: 'Name is required.' }, { status: 400 });
   try {
-    return NextResponse.json(await updatePlace(session.token, coworkingId, parsedPlaceId, {
+    return NextResponse.json(await updatePlace(session.token, coworkingId, placeId, {
       name: payload.name.trim(),
-      placeTypeId: payload.placeTypeId,
+      locX: payload.locX,
+      locY: payload.locY,
       active: payload.active,
     }));
   } catch (error) {
@@ -32,13 +37,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string; placeId: string }> }) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
-  const { id, placeId } = await params;
+  const { id, placeId: placeIdRaw } = await params;
   const coworkingId = parseId(id);
-  const parsedPlaceId = parseId(placeId);
-  if (coworkingId == null || parsedPlaceId == null) return NextResponse.json({ message: 'Invalid identifiers.' }, { status: 400 });
+  const placeId = parseId(placeIdRaw);
+  if (coworkingId == null || placeId == null) return NextResponse.json({ message: 'Invalid place path.' }, { status: 400 });
   try {
-    await archivePlace(session.token, coworkingId, parsedPlaceId);
-    return NextResponse.json({ success: true });
+    await archivePlace(session.token, coworkingId, placeId);
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
     return NextResponse.json({ message: 'Unable to archive place.' }, { status: 500 });

@@ -5,5 +5,5 @@ export default async function CoworkingDashboardPage({ params }: { params: Promi
   const { id } = await params;
   const coworkingId = Number(id);
   if (!Number.isInteger(coworkingId)) notFound();
-  return <CoworkingDashboardPageClient coworkingId={coworkingId} />;
+  return <CoworkingDashboardPageClient coworkingId={coworkingId}/>;
 }

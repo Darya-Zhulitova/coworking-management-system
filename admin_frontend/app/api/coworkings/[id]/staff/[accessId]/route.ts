@@ -15,10 +15,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const parsedAccessId = parseId(accessId);
   if (coworkingId == null || parsedAccessId == null) return NextResponse.json({ message: 'Invalid identifiers.' }, { status: 400 });
   let payload: { roleId?: number; active?: boolean };
-  try { payload = await request.json() as { roleId?: number; active?: boolean }; } catch { return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 }); }
+  try {
+    payload = await request.json() as { roleId?: number; active?: boolean };
+  } catch {
+    return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
+  }
   if (!payload.roleId || typeof payload.active !== 'boolean') return NextResponse.json({ message: 'Role and active flag are required.' }, { status: 400 });
   try {
-    return NextResponse.json(await updateCoworkingRole(session.token, coworkingId, parsedAccessId, { roleId: payload.roleId, active: payload.active }));
+    return NextResponse.json(await updateCoworkingRole(session.token, coworkingId, parsedAccessId, {
+      roleId: payload.roleId,
+      active: payload.active
+    }));
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
     return NextResponse.json({ message: 'Unable to update staff access.' }, { status: 500 });

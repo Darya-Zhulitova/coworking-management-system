@@ -1,7 +1,14 @@
 export interface Coworking {
   id: number;
   name: string;
+  description: string;
+  address: string;
+  workingHoursLabel: string;
+  heroTitle?: string | null;
+  heroText?: string | null;
+  imageUrls: string[];
   schedule: number;
+  autoApproveMembership: boolean;
   active: boolean;
   archived: boolean;
   configurationVersion: number;
@@ -12,12 +19,24 @@ export interface Coworking {
 
 export interface CreateCoworkingRequest {
   name: string;
-  schedule?: number;
+  description: string;
+  address: string;
+  workingHoursLabel: string;
+  heroTitle?: string;
+  heroText?: string;
+  imageUrls: string[];
+  autoApproveMembership?: boolean;
 }
 
 export interface UpdateCoworkingRequest {
   name: string;
-  schedule?: number;
+  description: string;
+  address: string;
+  workingHoursLabel: string;
+  heroTitle?: string;
+  heroText?: string;
+  imageUrls: string[];
+  autoApproveMembership?: boolean;
   active?: boolean;
 }
 

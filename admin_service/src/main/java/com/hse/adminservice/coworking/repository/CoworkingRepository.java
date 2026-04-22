@@ -1,0 +1,19 @@
+package com.hse.adminservice.coworking.repository;
+
+import com.hse.adminservice.coworking.entity.Coworking;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface CoworkingRepository extends JpaRepository<Coworking, Long> {
+    List<Coworking> findAllByArchivedFalse();
+
+    List<Coworking> findAllByOwnerIdAndArchivedFalse(Long ownerId);
+
+    List<Coworking> findAllByArchivedTrue();
+
+    Optional<Coworking> findByIdAndArchivedFalse(Long id);
+
+    boolean existsByIdAndArchivedFalse(Long id);
+}

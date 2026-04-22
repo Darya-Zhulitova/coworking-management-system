@@ -13,6 +13,7 @@ export interface CoworkingRoleDefinition {
   roleId: number;
   name: string;
   grants: string[];
+  active: boolean;
 }
 
 export interface AssignCoworkingRoleRequest {
@@ -22,5 +23,15 @@ export interface AssignCoworkingRoleRequest {
 
 export interface UpdateCoworkingRoleRequest {
   roleId: number;
+  active: boolean;
+}
+
+export interface CreateRoleRequest {
+  name: string;
+  grants: string[];
+  active?: boolean;
+}
+
+export interface UpdateRoleRequest extends CreateRoleRequest {
   active: boolean;
 }

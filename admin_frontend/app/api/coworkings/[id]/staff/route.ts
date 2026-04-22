@@ -26,10 +26,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const id = parseId((await params).id);
   if (id == null) return NextResponse.json({ message: 'Invalid coworking id.' }, { status: 400 });
   let payload: { email?: string; roleId?: number };
-  try { payload = await request.json() as { email?: string; roleId?: number }; } catch { return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 }); }
+  try {
+    payload = await request.json() as { email?: string; roleId?: number };
+  } catch {
+    return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
+  }
   if (!payload.email?.trim() || !payload.roleId) return NextResponse.json({ message: 'Email and role are required.' }, { status: 400 });
   try {
-    return NextResponse.json(await assignCoworkingRole(session.token, id, { email: payload.email.trim(), roleId: payload.roleId }), { status: 201 });
+    return NextResponse.json(await assignCoworkingRole(session.token, id, {
+      email: payload.email.trim(),
+      roleId: payload.roleId
+    }), { status: 201 });
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
     return NextResponse.json({ message: 'Unable to assign coworking role.' }, { status: 500 });

@@ -2,19 +2,20 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { ServiceWorkerRegistration } from '@/components/service-worker-registration';
+import { AdminNavbar } from '@/components/admin-navbar';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Coworking Admin',
-    template: '%s | Coworking Admin',
+    default: 'SpaceBooking Manager',
+    template: '%s | SpaceBooking Manager',
   },
-  description: 'Admin panel for coworking management.',
-  applicationName: 'Coworking Admin',
+  description: 'Панель управления коворкингами.',
+  applicationName: 'SpaceBooking Manager',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Coworking Admin',
+    title: 'SpaceBooking Manager',
   },
   icons: {
     icon: [
@@ -31,11 +32,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className="app-body">
-        <ServiceWorkerRegistration />
-        {children}
-      </body>
+    <html lang="ru">
+    <body className="app-body">
+    <ServiceWorkerRegistration/>
+    <AdminNavbar/>
+    {children}
+    </body>
     </html>
   );
 }

@@ -7,15 +7,12 @@ import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
 import CardBody from 'react-bootstrap/CardBody';
-import CardText from 'react-bootstrap/CardText';
 import CardTitle from 'react-bootstrap/CardTitle';
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import ListGroup from 'react-bootstrap/ListGroup';
 import Row from 'react-bootstrap/Row';
 import Stack from 'react-bootstrap/Stack';
-import { CoworkingCreateForm } from '@/components/coworking-create-form';
-import { LogoutButton } from '@/components/logout-button';
 import { FullPageError, FullPageLoader } from '@/components/page-state';
 import { requestJson } from '@/lib/client/api';
 import type { Coworking } from '@/types/coworking';
@@ -27,8 +24,7 @@ export function CoworkingsPageClient() {
   const [archivedCoworkings, setArchivedCoworkings] = useState<Coworking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const canCreate = useMemo(() => context?.grants.includes('COWORKING_CREATE') ?? false, [context]);
+  const canCreate = useMemo(() => context?.grants.includes('COWORKING_EDIT') ?? false, [context]);
 
   useEffect(() => {
     if (!context) return;
@@ -45,7 +41,7 @@ export function CoworkingsPageClient() {
       })
       .catch((error) => {
         if (!isMounted) return;
-        setErrorMessage(error instanceof Error ? error.message : 'Unable to load coworkings.');
+        setErrorMessage(error instanceof Error ? error.message : 'Не удалось загрузить коворкинги.');
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);
@@ -56,39 +52,31 @@ export function CoworkingsPageClient() {
     };
   }, [context]);
 
-  if (isContextLoading || (context && isLoading)) return <FullPageLoader label="Loading coworkings..." />;
-  if (contextError) return <FullPageError message={contextError} />;
-  if (!context) return <FullPageLoader label="Redirecting to login..." />;
+  if (isContextLoading || (context && isLoading)) {
+    return <FullPageLoader label="Загрузка коворкингов..."/>;
+  }
+
+  if (contextError) {
+    return <FullPageError message={contextError}/>;
+  }
+
+  if (!context) {
+    return <FullPageLoader label="Переход на страницу входа..."/>;
+  }
 
   return (
     <main className="page-shell">
       <Container className="py-4 py-md-5">
         <Stack gap={4}>
-          <Card className="content-card">
-            <CardBody>
-              <Stack direction="horizontal" className="justify-content-between align-items-start gap-3 flex-wrap">
-                <div>
-                  <CardTitle as="h1" className="mb-2">Coworkings</CardTitle>
-                  <CardText className="mb-1">Signed in as <strong>{context.name}</strong></CardText>
-                  <CardText className="mb-0 text-body-secondary">{context.email}</CardText>
-                </div>
-                <LogoutButton />
-              </Stack>
-            </CardBody>
-          </Card>
-
-          {canCreate ? (
-            <Card className="content-card">
-              <CardBody>
-                <CardTitle as="h2" className="h4 mb-3">Create coworking</CardTitle>
-                <CoworkingCreateForm />
-              </CardBody>
-            </Card>
-          ) : null}
+          <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <h2 className="mb-0">Список коворкингов</h2>
+            <Stack direction="horizontal" gap={2} className="flex-wrap">
+              {canCreate ? <Link href="/coworkings/new"><Button>Создать коворкинг</Button></Link> : null}
+            </Stack>
+          </div>
 
           <Card className="content-card">
             <CardBody>
-              <CardTitle as="h2" className="h4 mb-3">Accessible coworkings</CardTitle>
               {errorMessage ? <Alert variant="danger">{errorMessage}</Alert> : null}
               {coworkings.length > 0 ? (
                 <ListGroup variant="flush">
@@ -97,22 +85,28 @@ export function CoworkingsPageClient() {
                       <Row className="g-3 align-items-center">
                         <Col md>
                           <div className="fw-semibold fs-5">{coworking.name}</div>
-                          <div className="text-body-secondary">ID: {coworking.id}</div>
-                          <Stack direction="horizontal" gap={2} className="flex-wrap mt-2">
-                            <Badge bg={coworking.active ? 'success' : 'secondary'}>{coworking.active ? 'Active' : 'Inactive'}</Badge>
+                          <div className="text-body-secondary">{coworking.address}</div>
+                          <div className="text-body-secondary small mt-1">{coworking.workingHoursLabel}</div>
+                          {coworking.heroTitle ? <div className="mt-2 fw-semibold">{coworking.heroTitle}</div> : null}
+                          <div className="mt-2">{coworking.description}</div>
+                          <Stack direction="horizontal" gap={2} className="flex-wrap mt-3">
+                            <Badge bg={coworking.active ? 'success' : 'secondary'}>
+                              {coworking.active ? 'Активен' : 'Неактивен'}
+                            </Badge>
                           </Stack>
                         </Col>
                         <Col md="auto">
-                          <Stack direction="horizontal" gap={2} className="flex-wrap">
-                            <Button as={Link} href={`/coworkings/${coworking.id}/dashboard`} variant="primary">Open</Button>
-                          </Stack>
+                          <Button as={Link} href={`/coworkings/${coworking.id}/users`} variant="primary">
+                            Открыть
+                          </Button>
                         </Col>
                       </Row>
                     </ListGroup.Item>
                   ))}
                 </ListGroup>
               ) : (
-                <Alert variant="secondary" className="mb-0">No coworkings are available for the current subject.</Alert>
+                <Alert variant="secondary" className="mb-0">Для текущей учётной записи нет доступных
+                  коворкингов.</Alert>
               )}
             </CardBody>
           </Card>
@@ -120,12 +114,13 @@ export function CoworkingsPageClient() {
           {archivedCoworkings.length > 0 ? (
             <Card className="content-card">
               <CardBody>
-                <CardTitle as="h2" className="h4 mb-3">Archived coworkings</CardTitle>
+                <CardTitle as="h2" className="h4 mb-3">Архив коворкингов</CardTitle>
                 <ListGroup variant="flush">
                   {archivedCoworkings.map((coworking) => (
                     <ListGroup.Item key={coworking.id} className="px-0 entity-card">
                       <div className="fw-semibold">{coworking.name}</div>
-                      <div className="text-body-secondary">ID: {coworking.id}</div>
+                      <div className="text-body-secondary">{coworking.address}</div>
+                      <div className="text-body-secondary small">{coworking.workingHoursLabel}</div>
                     </ListGroup.Item>
                   ))}
                 </ListGroup>
