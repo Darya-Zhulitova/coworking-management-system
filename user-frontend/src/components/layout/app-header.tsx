@@ -74,6 +74,7 @@ export function AppHeader() {
         <nav className="navbar navbar-expand-lg px-0 py-3" aria-label="Основная навигация пользователя">
           <div className="d-flex align-items-center flex-grow-1 min-w-0 gap-3">
             <Link href="/" className="navbar-brand fw-semibold me-0 d-inline-flex align-items-center gap-0">
+              <Image src="/brand-icon.svg" alt="" width={30} height={30} priority aria-hidden="true"/>
               <span>SpaceBooking</span>
             </Link>
             {coworkingLabel && coworkingHomeHref ? (
