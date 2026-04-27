@@ -3,9 +3,9 @@ package com.hse.adminservice.coworking.mapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hse.adminservice.coworking.domain.Coworking;
 import com.hse.adminservice.coworking.dto.CoworkingPublicInfoResponse;
 import com.hse.adminservice.coworking.dto.CoworkingResponse;
-import com.hse.adminservice.coworking.entity.Coworking;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

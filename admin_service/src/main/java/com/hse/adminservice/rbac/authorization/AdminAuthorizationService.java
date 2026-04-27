@@ -1,13 +1,13 @@
 package com.hse.adminservice.rbac.authorization;
 
-import com.hse.adminservice.common.exception.ResourceNotFoundException;
-import com.hse.adminservice.context.service.AuthenticatedAdminActorService;
-import com.hse.adminservice.coworking.entity.Coworking;
-import com.hse.adminservice.coworking.repository.CoworkingRepository;
-import com.hse.adminservice.rbac.entity.Access;
-import com.hse.adminservice.rbac.entity.Grant;
-import com.hse.adminservice.rbac.repository.AccessRepository;
-import com.hse.adminservice.rbac.service.AccessService;
+import com.hse.adminservice.admincontext.application.AuthenticatedAdminActorService;
+import com.hse.adminservice.common.error.ResourceNotFoundException;
+import com.hse.adminservice.coworking.domain.Coworking;
+import com.hse.adminservice.coworking.persistence.CoworkingRepository;
+import com.hse.adminservice.rbac.application.AccessService;
+import com.hse.adminservice.rbac.domain.Access;
+import com.hse.adminservice.rbac.domain.Grant;
+import com.hse.adminservice.rbac.persistence.AccessRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

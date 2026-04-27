@@ -1,10 +1,10 @@
 package com.hse.adminservice.rbac.mapper;
 
+import com.hse.adminservice.rbac.domain.Access;
+import com.hse.adminservice.rbac.domain.Grant;
+import com.hse.adminservice.rbac.domain.Role;
 import com.hse.adminservice.rbac.dto.CoworkingAccessResponse;
 import com.hse.adminservice.rbac.dto.CoworkingRoleResponse;
-import com.hse.adminservice.rbac.entity.Access;
-import com.hse.adminservice.rbac.entity.Grant;
-import com.hse.adminservice.rbac.entity.Role;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;

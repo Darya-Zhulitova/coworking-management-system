@@ -1,8 +1,8 @@
 package com.hse.adminservice.rbac.authorization;
 
-import com.hse.adminservice.coworking.entity.Coworking;
-import com.hse.adminservice.rbac.entity.Grant;
-import com.hse.adminservice.rbac.entity.Role;
+import com.hse.adminservice.coworking.domain.Coworking;
+import com.hse.adminservice.rbac.domain.Grant;
+import com.hse.adminservice.rbac.domain.Role;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;

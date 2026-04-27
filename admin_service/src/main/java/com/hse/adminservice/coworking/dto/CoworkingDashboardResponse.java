@@ -1,6 +1,6 @@
 package com.hse.adminservice.coworking.dto;
 
-import com.hse.adminservice.rbac.entity.Grant;
+import com.hse.adminservice.rbac.domain.Grant;
 import lombok.Builder;
 
 import java.util.Set;

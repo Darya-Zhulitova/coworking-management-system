@@ -1,6 +1,6 @@
 package com.hse.adminservice.common.security;
 
-import com.hse.adminservice.rbac.repository.AdminRepository;
+import com.hse.adminservice.adminaccount.persistence.AdminRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
