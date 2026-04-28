@@ -1,24 +1,18 @@
-import { NextResponse } from 'next/server';
-import { BackendRequestError, getCoworking, getCurrentUser } from '@/lib/api/backend';
-import { getUserSession } from '@/lib/auth/session';
+import { getCoworking, getCurrentUser } from '@/lib/api/backend';
+import { handleApiError, okJson, parseCoworkingId, requireApiSession } from '@/lib/api/route-helpers';
 import type { CoworkingShellContext } from '@/lib/types';
 
-function parseCoworkingId(value: string): number | null {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-}
-
 export async function GET(_request: Request, { params }: { params: Promise<{ coworkingId: string }> }) {
-  const session = await getUserSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  const session = await requireApiSession();
+  if (!session.ok) return session.response;
 
-  const coworkingId = parseCoworkingId((await params).coworkingId);
-  if (coworkingId == null) return NextResponse.json({ message: 'Invalid coworking id.' }, { status: 400 });
+  const parsedCoworkingId = parseCoworkingId((await params).coworkingId);
+  if (!parsedCoworkingId.ok) return parsedCoworkingId.response;
 
   try {
     const [user, coworking] = await Promise.all([
-      getCurrentUser(session.token),
-      getCoworking(coworkingId, session.token),
+      getCurrentUser(session.value.token),
+      getCoworking(parsedCoworkingId.value, session.value.token),
     ]);
 
     const context: CoworkingShellContext = {
@@ -31,11 +25,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cow
       },
     };
 
-    return NextResponse.json(context);
+    return okJson(context);
   } catch (error) {
-    if (error instanceof BackendRequestError) {
-      return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    }
-    return NextResponse.json({ message: 'Unable to load coworking context.' }, { status: 500 });
+    return handleApiError(error, 'Unable to load coworking context.');
   }
 }

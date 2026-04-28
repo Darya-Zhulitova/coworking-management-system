@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
+import { okJson } from '@/lib/api/route-helpers';
 import { clearUserSession } from '@/lib/auth/session';
 
 export async function POST() {
   await clearUserSession();
-  return NextResponse.json({ success: true });
+  return okJson({ success: true });
 }

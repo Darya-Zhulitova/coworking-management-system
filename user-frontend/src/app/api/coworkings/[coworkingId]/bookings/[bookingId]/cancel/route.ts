@@ -1,29 +1,20 @@
-import { NextResponse } from 'next/server';
-import { BackendRequestError, cancelBooking } from '@/lib/api/backend';
-import { getUserSession } from '@/lib/auth/session';
-
-function parsePositiveId(value: string): number | null {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-}
+import { cancelBooking } from '@/lib/api/backend';
+import { badRequest, handleApiError, okJson, parsePositiveInteger, requireApiSession } from '@/lib/api/route-helpers';
 
 export async function POST(_request: Request, { params }: {
   params: Promise<{ coworkingId: string; bookingId: string }>
 }) {
-  const session = await getUserSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  const session = await requireApiSession();
+  if (!session.ok) return session.response;
 
   const { coworkingId: rawCoworkingId, bookingId: rawBookingId } = await params;
-  const coworkingId = parsePositiveId(rawCoworkingId);
-  const bookingId = parsePositiveId(rawBookingId);
-  if (coworkingId == null || bookingId == null) return NextResponse.json({ message: 'Invalid request parameters.' }, { status: 400 });
+  const coworkingId = parsePositiveInteger(rawCoworkingId);
+  const bookingId = parsePositiveInteger(rawBookingId);
+  if (coworkingId == null || bookingId == null) return badRequest('Invalid request parameters.');
 
   try {
-    return NextResponse.json(await cancelBooking(coworkingId, bookingId, session.token));
+    return okJson(await cancelBooking(coworkingId, bookingId, session.value.token));
   } catch (error) {
-    if (error instanceof BackendRequestError) {
-      return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    }
-    return NextResponse.json({ message: 'Unable to cancel booking.' }, { status: 500 });
+    return handleApiError(error, 'Unable to cancel booking.');
   }
 }

@@ -1,29 +1,20 @@
-import { NextResponse } from 'next/server';
-import { BackendRequestError, getServiceRequest } from '@/lib/api/backend';
-import { getUserSession } from '@/lib/auth/session';
-
-function parsePositiveId(value: string): number | null {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-}
+import { getServiceRequest } from '@/lib/api/backend';
+import { badRequest, handleApiError, okJson, parsePositiveInteger, requireApiSession } from '@/lib/api/route-helpers';
 
 export async function GET(_request: Request, { params }: {
   params: Promise<{ coworkingId: string; requestId: string }>
 }) {
-  const session = await getUserSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  const session = await requireApiSession();
+  if (!session.ok) return session.response;
 
   const { coworkingId: rawCoworkingId, requestId: rawRequestId } = await params;
-  const coworkingId = parsePositiveId(rawCoworkingId);
-  const requestId = parsePositiveId(rawRequestId);
-  if (coworkingId == null || requestId == null) return NextResponse.json({ message: 'Invalid request parameters.' }, { status: 400 });
+  const coworkingId = parsePositiveInteger(rawCoworkingId);
+  const requestId = parsePositiveInteger(rawRequestId);
+  if (coworkingId == null || requestId == null) return badRequest('Invalid request parameters.');
 
   try {
-    return NextResponse.json(await getServiceRequest(coworkingId, requestId, session.token));
+    return okJson(await getServiceRequest(coworkingId, requestId, session.value.token));
   } catch (error) {
-    if (error instanceof BackendRequestError) {
-      return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    }
-    return NextResponse.json({ message: 'Unable to load service request.' }, { status: 500 });
+    return handleApiError(error, 'Unable to load service request.');
   }
 }

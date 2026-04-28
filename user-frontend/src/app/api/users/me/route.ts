@@ -1,16 +1,13 @@
-import { NextResponse } from 'next/server';
-import { BackendRequestError, getCurrentUser } from '@/lib/api/backend';
-import { getUserSession } from '@/lib/auth/session';
+import { getCurrentUser } from '@/lib/api/backend';
+import { handleApiError, okJson, requireApiSession } from '@/lib/api/route-helpers';
 
 export async function GET() {
-  const session = await getUserSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  const session = await requireApiSession();
+  if (!session.ok) return session.response;
+
   try {
-    return NextResponse.json(await getCurrentUser(session.token));
+    return okJson(await getCurrentUser(session.value.token));
   } catch (error) {
-    if (error instanceof BackendRequestError) {
-      return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    }
-    return NextResponse.json({ message: 'Unable to load user.' }, { status: 500 });
+    return handleApiError(error, 'Unable to load user.');
   }
 }

@@ -1,6 +1,12 @@
-import { NextResponse } from 'next/server';
-import { BackendRequestError, createPayRequest } from '@/lib/api/backend';
-import { getUserSession } from '@/lib/auth/session';
+import { createPayRequest } from '@/lib/api/backend';
+import {
+  badRequest,
+  createdJson,
+  handleApiError,
+  parsePositiveInteger,
+  readJsonBody,
+  requireApiSession,
+} from '@/lib/api/route-helpers';
 
 type CreatePayRequestPayload = {
   coworkingId?: number;
@@ -9,39 +15,32 @@ type CreatePayRequestPayload = {
 };
 
 export async function POST(request: Request) {
-  const session = await getUserSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  const session = await requireApiSession();
+  if (!session.ok) return session.response;
 
-  let payload: CreatePayRequestPayload;
-  try {
-    payload = (await request.json()) as CreatePayRequestPayload;
-  } catch {
-    return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
-  }
+  const body = await readJsonBody<CreatePayRequestPayload>(request);
+  if (!body.ok) return body.response;
 
-  if (!Number.isInteger(payload.coworkingId) || Number(payload.coworkingId) <= 0) {
-    return NextResponse.json({ message: 'Invalid coworking id.' }, { status: 400 });
-  }
+  const payload = body.value;
+  const coworkingId = parsePositiveInteger(payload.coworkingId);
+  if (coworkingId == null) return badRequest('Invalid coworking id.');
 
   if (!Number.isInteger(payload.amount) || Number(payload.amount) === 0) {
-    return NextResponse.json({ message: 'Amount must be a non-zero integer.' }, { status: 400 });
+    return badRequest('Amount must be a non-zero integer.');
   }
 
   if (!payload.userComment?.trim()) {
-    return NextResponse.json({ message: 'Comment is required.' }, { status: 400 });
+    return badRequest('Comment is required.');
   }
 
   try {
     const created = await createPayRequest({
-      coworkingId: Number(payload.coworkingId),
+      coworkingId,
       amount: Number(payload.amount),
       userComment: payload.userComment.trim(),
-    }, session.token);
-    return NextResponse.json(created, { status: 201 });
+    }, session.value.token);
+    return createdJson(created);
   } catch (error) {
-    if (error instanceof BackendRequestError) {
-      return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    }
-    return NextResponse.json({ message: 'Unable to create pay request.' }, { status: 500 });
+    return handleApiError(error, 'Unable to create pay request.');
   }
 }
