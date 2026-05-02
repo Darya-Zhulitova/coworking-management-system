@@ -6,12 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sass:build": "sass ./scss/custom.scss ./public/css/custom.css",
+    "sass:watch": "sass --watch ./scss/custom.scss ./public/css/custom.css"
   },
   "dependencies": {
+    "bootstrap": "5.3.8",
     "next": "16.2.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "bootstrap-icons": "1.13.1",
+    "sass": "^1.93.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -5,19 +5,13 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateServiceRequestDto(
-        @NotNull(message = "membershipId must not be null")
-        Long membershipId,
+        @NotNull(message = "coworkingId must not be null") Long coworkingId,
 
-        Long placeId,
+        @NotNull(message = "typeId must not be null") Long typeId,
 
-        Long bookingId,
-
-        @NotBlank(message = "category must not be blank")
-        @Size(max = 64, message = "category must be at most 64 characters")
-        String category,
-
-        @NotBlank(message = "description must not be blank")
-        @Size(max = 1000, message = "description must be at most 1000 characters")
-        String description
+        @NotBlank(message = "name must not be blank") @Size(
+                max = 255,
+                message = "name must be at most 255 characters"
+        ) String name
 ) {
 }
