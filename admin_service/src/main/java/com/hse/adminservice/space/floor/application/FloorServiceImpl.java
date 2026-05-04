@@ -2,6 +2,7 @@ package com.hse.adminservice.space.floor.application;
 
 import com.hse.adminservice.common.error.ConflictException;
 import com.hse.adminservice.common.error.ResourceNotFoundException;
+import com.hse.adminservice.common.time.TimeProvider;
 import com.hse.adminservice.coworking.application.CoworkingConfigurationVersionService;
 import com.hse.adminservice.coworking.domain.Coworking;
 import com.hse.adminservice.coworking.persistence.CoworkingRepository;
@@ -31,6 +32,7 @@ public class FloorServiceImpl implements FloorService {
     private final AdminAuthorizationService authorizationService;
     private final FloorMapper floorMapper;
     private final CoworkingConfigurationVersionService configurationVersionService;
+    private final TimeProvider timeProvider;
 
     @Override
     @Transactional
@@ -47,7 +49,7 @@ public class FloorServiceImpl implements FloorService {
         int nextIndex = floorRepository.findAllByCoworkingIdAndArchivedFalseOrderByIndexAsc(coworkingId).stream().map(
                 Floor::getIndex).max(Integer::compareTo).map(value -> value + 1).orElse(0);
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = timeProvider.now();
         Floor floor = floorRepository.save(Floor.builder()
                 .coworking(coworking)
                 .name(normalizedName)
@@ -93,7 +95,7 @@ public class FloorServiceImpl implements FloorService {
         floor.setImageFileId(trimToNull(request.imageFileId()));
         if (request.active() != null)
             floor.setActive(request.active());
-        floor.setUpdatedAt(LocalDateTime.now());
+        floor.setUpdatedAt(timeProvider.now());
         Floor saved = floorRepository.save(floor);
         configurationVersionService.bumpVersion(coworkingId);
         return floorMapper.toResponse(saved);
@@ -110,7 +112,7 @@ public class FloorServiceImpl implements FloorService {
         if (placeRepository.existsByCoworkingIdAndFloorIdAndArchivedFalse(coworkingId, floorId)) {
             throw new ConflictException("Cannot archive floor while non-archived places still reference it");
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = timeProvider.now();
         floor.setArchived(true);
         floor.setActive(false);
         floor.setArchivedAt(now);

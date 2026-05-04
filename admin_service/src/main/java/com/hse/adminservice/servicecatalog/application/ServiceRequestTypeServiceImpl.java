@@ -2,6 +2,7 @@ package com.hse.adminservice.servicecatalog.application;
 
 import com.hse.adminservice.common.error.ConflictException;
 import com.hse.adminservice.common.error.ResourceNotFoundException;
+import com.hse.adminservice.common.time.TimeProvider;
 import com.hse.adminservice.coworking.application.CoworkingConfigurationVersionService;
 import com.hse.adminservice.coworking.domain.Coworking;
 import com.hse.adminservice.coworking.persistence.CoworkingRepository;
@@ -30,6 +31,7 @@ public class ServiceRequestTypeServiceImpl implements ServiceRequestTypeService 
     private final AdminAuthorizationService authorizationService;
     private final ServiceRequestTypeMapper serviceRequestTypeMapper;
     private final CoworkingConfigurationVersionService configurationVersionService;
+    private final TimeProvider timeProvider;
 
     @Override
     @Transactional
@@ -44,7 +46,7 @@ public class ServiceRequestTypeServiceImpl implements ServiceRequestTypeService 
         )) {
             throw new ConflictException("Service request type name must be unique within coworking");
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = timeProvider.now();
         ServiceRequestType entity = serviceRequestTypeRepository.save(ServiceRequestType.builder()
                 .coworking(coworking)
                 .name(normalizedName)
@@ -96,7 +98,7 @@ public class ServiceRequestTypeServiceImpl implements ServiceRequestTypeService 
             entity.setActive(request.getActive());
         }
         entity.setVersion(entity.getVersion() + 1);
-        entity.setUpdatedAt(LocalDateTime.now());
+        entity.setUpdatedAt(timeProvider.now());
         ServiceRequestType saved = serviceRequestTypeRepository.save(entity);
         configurationVersionService.bumpVersion(coworkingId);
         return serviceRequestTypeMapper.toResponse(saved);
@@ -107,7 +109,7 @@ public class ServiceRequestTypeServiceImpl implements ServiceRequestTypeService 
     public void archive(Long coworkingId, Long serviceRequestTypeId) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.SERVICE_REQUEST_TYPE_EDIT);
         ServiceRequestType entity = getExistingType(coworkingId, serviceRequestTypeId);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = timeProvider.now();
         entity.setArchived(true);
         entity.setActive(false);
         entity.setArchivedAt(now);

@@ -2,6 +2,7 @@ package com.hse.adminservice.bootstrap;
 
 import com.hse.adminservice.adminaccount.domain.Admin;
 import com.hse.adminservice.adminaccount.persistence.AdminRepository;
+import com.hse.adminservice.common.time.TimeProvider;
 import com.hse.adminservice.coworking.domain.Coworking;
 import com.hse.adminservice.coworking.persistence.CoworkingRepository;
 import com.hse.adminservice.pricing.discount.domain.TariffDiscountRule;
@@ -32,6 +33,7 @@ import java.util.List;
 @Configuration
 @RequiredArgsConstructor
 public class AdminDataInitializer {
+    private final TimeProvider timeProvider;
     private final PasswordEncoder passwordEncoder;
     private final AccessService accessService;
     private final SystemCoworkingRoleDefinitions systemCoworkingRoleDefinitions;
@@ -48,7 +50,7 @@ public class AdminDataInitializer {
             ServiceRequestTypeRepository serviceRequestTypeRepository
     ) {
         return args -> {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = timeProvider.now();
 
             Admin admin = adminRepository.findByEmailIgnoreCase("admin@test.test").orElseGet(() -> adminRepository.save(
                     Admin.builder()

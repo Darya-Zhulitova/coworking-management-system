@@ -3,6 +3,7 @@ package com.hse.adminservice.configsnapshot.application;
 import com.hse.adminservice.calendar.closing.persistence.PlaceClosingRepository;
 import com.hse.adminservice.calendar.exception.persistence.CoworkingScheduleExceptionRepository;
 import com.hse.adminservice.common.error.ResourceNotFoundException;
+import com.hse.adminservice.common.time.TimeProvider;
 import com.hse.adminservice.configsnapshot.dto.CoworkingConfigSnapshotResponse;
 import com.hse.adminservice.coworking.persistence.CoworkingRepository;
 import com.hse.adminservice.pricing.discount.domain.TariffDiscountRule;
@@ -16,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Comparator;
 
 @Service
@@ -33,6 +33,7 @@ public class CoworkingConfigSnapshotService {
     private final ServiceRequestTypeRepository serviceRequestTypeRepository;
     private final PlaceMapper placeMapper;
     private final com.hse.adminservice.coworking.mapper.CoworkingMapper coworkingMapper;
+    private final TimeProvider timeProvider;
 
     public CoworkingConfigSnapshotResponse getSnapshot(Long coworkingId) {
         var coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
@@ -40,7 +41,7 @@ public class CoworkingConfigSnapshotService {
         return CoworkingConfigSnapshotResponse.builder()
                 .coworkingId(coworking.getId())
                 .configVersion(coworking.getConfigurationVersion())
-                .generatedAt(LocalDateTime.now())
+                .generatedAt(timeProvider.now())
                 .schedule(coworking.getSchedule())
                 .name(coworking.getName())
                 .description(coworking.getDescription())

@@ -2,6 +2,7 @@ package com.hse.adminservice.coworking.application;
 
 import com.hse.adminservice.admincontext.application.CurrentAdminService;
 import com.hse.adminservice.common.error.ResourceNotFoundException;
+import com.hse.adminservice.common.time.TimeProvider;
 import com.hse.adminservice.coworking.domain.Coworking;
 import com.hse.adminservice.coworking.dto.CoworkingCreateRequest;
 import com.hse.adminservice.coworking.dto.CoworkingDashboardResponse;
@@ -29,12 +30,13 @@ public class CoworkingServiceImpl implements CoworkingService {
     private final AccessService accessService;
     private final AdminAuthorizationService authorizationService;
     private final CoworkingMapper coworkingMapper;
+    private final TimeProvider timeProvider;
 
     @Override
     @Transactional
     public CoworkingResponse create(CoworkingCreateRequest request) {
         authorizationService.requireGlobalAction(Grant.COWORKING_EDIT);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = timeProvider.now();
 
         Coworking coworking = Coworking.builder()
                 .name(request.name().trim())
@@ -99,7 +101,7 @@ public class CoworkingServiceImpl implements CoworkingService {
         if (request.autoApproveMembership() != null) {
             coworking.setAutoApproveMembership(request.autoApproveMembership());
         }
-        coworking.setUpdatedAt(LocalDateTime.now());
+        coworking.setUpdatedAt(timeProvider.now());
 
         return coworkingMapper.toResponse(coworkingRepository.save(coworking));
     }
@@ -112,9 +114,9 @@ public class CoworkingServiceImpl implements CoworkingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
 
         coworking.setArchived(true);
-        coworking.setArchivedAt(LocalDateTime.now());
+        coworking.setArchivedAt(timeProvider.now());
         coworking.setActive(false);
-        coworking.setUpdatedAt(LocalDateTime.now());
+        coworking.setUpdatedAt(timeProvider.now());
 
         coworkingRepository.save(coworking);
     }

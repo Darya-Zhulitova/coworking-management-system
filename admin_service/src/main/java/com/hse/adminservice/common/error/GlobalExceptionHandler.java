@@ -1,5 +1,6 @@
 package com.hse.adminservice.common.error;
 
+import com.hse.adminservice.common.time.TimeProvider;
 import com.hse.adminservice.rbac.authorization.AccessDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,10 +9,15 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private final TimeProvider timeProvider;
+
+    public GlobalExceptionHandler(TimeProvider timeProvider) {
+        this.timeProvider = timeProvider;
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage());
@@ -53,7 +59,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(ApiError.builder()
                 .status(status.value())
                 .message(message)
-                .timestamp(LocalDateTime.now())
+                .timestamp(timeProvider.now())
                 .build());
     }
 }

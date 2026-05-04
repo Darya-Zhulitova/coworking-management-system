@@ -2,6 +2,7 @@ package com.hse.adminservice.space.placetype.application;
 
 import com.hse.adminservice.common.error.ConflictException;
 import com.hse.adminservice.common.error.ResourceNotFoundException;
+import com.hse.adminservice.common.time.TimeProvider;
 import com.hse.adminservice.coworking.application.CoworkingConfigurationVersionService;
 import com.hse.adminservice.coworking.domain.Coworking;
 import com.hse.adminservice.coworking.persistence.CoworkingRepository;
@@ -34,6 +35,7 @@ public class PlaceTypeServiceImpl implements PlaceTypeService {
     private final AdminAuthorizationService authorizationService;
     private final PlaceTypeMapper placeTypeMapper;
     private final CoworkingConfigurationVersionService configurationVersionService;
+    private final TimeProvider timeProvider;
 
     @Override
     @Transactional
@@ -50,7 +52,7 @@ public class PlaceTypeServiceImpl implements PlaceTypeService {
         if (!Boolean.TRUE.equals(tariff.getActive())) {
             throw new ConflictException("Tariff must be active");
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = timeProvider.now();
         PlaceType placeType = placeTypeRepository.save(PlaceType.builder().coworking(coworking).tariff(tariff).name(
                 normalizedName).active(true).archived(false).createdAt(now).updatedAt(now).build());
         configurationVersionService.bumpVersion(coworkingId);
@@ -86,7 +88,7 @@ public class PlaceTypeServiceImpl implements PlaceTypeService {
         if (request.active() != null) {
             placeType.setActive(request.active());
         }
-        placeType.setUpdatedAt(LocalDateTime.now());
+        placeType.setUpdatedAt(timeProvider.now());
         PlaceType saved = placeTypeRepository.save(placeType);
         configurationVersionService.bumpVersion(coworkingId);
         return placeTypeMapper.toResponse(saved);
@@ -100,7 +102,7 @@ public class PlaceTypeServiceImpl implements PlaceTypeService {
         if (placeRepository.existsByCoworkingIdAndPlaceTypeIdAndArchivedFalse(coworkingId, placeTypeId)) {
             throw new ConflictException("Cannot archive place type while non-archived places still reference it");
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = timeProvider.now();
         placeType.setArchived(true);
         placeType.setActive(false);
         placeType.setArchivedAt(now);
