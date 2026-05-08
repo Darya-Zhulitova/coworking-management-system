@@ -1,0 +1,100 @@
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body.app-body {
+  background: #f8f9fa;
+  color: #212529;
+}
+
+a {
+  text-decoration: none;
+}
+
+pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.page-shell, .auth-shell {
+  min-height: 100vh;
+}
+
+.auth-card, .content-card {
+  border: 0;
+  box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.08);
+}
+
+.entity-card + .entity-card {
+  margin-top: 1rem;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.admin-navbar {
+  min-height: 4.25rem;
+  box-shadow: 0 0.125rem 0.5rem rgba(15, 23, 42, 0.04);
+}
+
+.admin-navbar .navbar-brand {
+  max-width: min(100%, 34rem);
+}
+
+.admin-navbar .nav-link {
+  font-weight: 500;
+}
+
+.admin-navbar .nav-link.active {
+  font-weight: 700;
+}
+
+.admin-navbar-coworking {
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.navbar-separator {
+  font-weight: 400;
+}
+
+.admin-navbar-meta {
+  min-width: max-content;
+}
+
+.admin-navbar-logout {
+  color: #6c757d;
+  display: inline-flex;
+  align-items: center;
+}
+
+.admin-navbar-logout:hover {
+  color: #0d6efd;
+}
+
+@media (max-width: 991.98px) {
+  .admin-navbar .navbar-brand {
+    max-width: calc(100% - 3.5rem);
+    font-size: 1rem;
+  }
+
+  .admin-navbar .navbar-collapse {
+    padding-bottom: 0.75rem;
+  }
+
+  .admin-navbar-meta {
+    min-width: 0;
+  }
+}
