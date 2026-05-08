@@ -25,6 +25,7 @@ dependencies {
     runtimeOnly("com.h2database:h2")
 
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("software.amazon.awssdk:s3:2.44.6")
 
     implementation("io.jsonwebtoken:jjwt-api:0.12.7")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.7")

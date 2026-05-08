@@ -34,6 +34,7 @@ public record CoworkingConfigSnapshotResponse(
             String name,
             Integer index,
             String imageFileId,
+            String imageUrl,
             Boolean active
     ) {
     }

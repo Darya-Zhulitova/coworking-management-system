@@ -1,11 +1,16 @@
 package com.hse.adminservice.space.floor.mapper;
 
+import com.hse.adminservice.files.FileStorageService;
 import com.hse.adminservice.space.floor.domain.Floor;
 import com.hse.adminservice.space.floor.dto.FloorResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class FloorMapper {
+    private final FileStorageService fileStorageService;
+
     public FloorResponse toResponse(Floor floor) {
         return FloorResponse.builder()
                 .id(floor.getId())
@@ -13,6 +18,7 @@ public class FloorMapper {
                 .name(floor.getName())
                 .index(floor.getIndex())
                 .imageFileId(floor.getImageFileId())
+                .imageUrl(fileStorageService.publicUrl(floor.getImageFileId()))
                 .active(floor.getActive())
                 .archived(floor.getArchived())
                 .archivedAt(floor.getArchivedAt())

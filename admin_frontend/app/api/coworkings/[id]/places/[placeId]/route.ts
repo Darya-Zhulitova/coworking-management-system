@@ -14,9 +14,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const coworkingId = parseId(id);
   const placeId = parseId(placeIdRaw);
   if (coworkingId == null || placeId == null) return NextResponse.json({ message: 'Invalid place path.' }, { status: 400 });
-  let payload: { name?: string; locX?: number; locY?: number; active?: boolean };
+  let payload: { name?: string; locX?: number | null; locY?: number | null; amenities?: string[]; active?: boolean };
   try {
-    payload = await request.json() as { name?: string; locX?: number; locY?: number; active?: boolean };
+    payload = await request.json() as {
+      name?: string;
+      locX?: number | null;
+      locY?: number | null;
+      amenities?: string[];
+      active?: boolean
+    };
   } catch {
     return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
   }
@@ -26,6 +32,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       name: payload.name.trim(),
       locX: payload.locX,
       locY: payload.locY,
+      amenities: payload.amenities,
       active: payload.active,
     }));
   } catch (error) {

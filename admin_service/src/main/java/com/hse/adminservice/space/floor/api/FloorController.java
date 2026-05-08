@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -40,6 +41,16 @@ public class FloorController {
             @Valid @RequestBody FloorUpdateRequest request
     ) {
         return floorService.update(coworkingId, floorId, request);
+    }
+
+
+    @PostMapping(value = "/{floorId}/plan", consumes = "multipart/form-data")
+    public FloorResponse uploadPlan(
+            @PathVariable Long coworkingId,
+            @PathVariable Long floorId,
+            @RequestPart("file") MultipartFile file
+    ) {
+        return floorService.uploadPlan(coworkingId, floorId, file);
     }
 
     @DeleteMapping("/{floorId}")

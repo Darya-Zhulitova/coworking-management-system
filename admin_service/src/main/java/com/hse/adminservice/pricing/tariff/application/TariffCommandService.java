@@ -87,8 +87,7 @@ public class TariffCommandService {
         Tariff tariff = getExistingTariff(coworkingId, tariffId);
         String normalizedName = request.getName().trim();
         if (!tariff.getName()
-                .equalsIgnoreCase(normalizedName) && tariffRepository.existsByCoworkingIdAndNameIgnoreCaseAndArchivedFalse(
-                coworkingId,
+                .equalsIgnoreCase(normalizedName) && tariffRepository.existsByCoworkingIdAndNameIgnoreCaseAndArchivedFalse(coworkingId,
                 normalizedName
         )) {
             throw new ConflictException("Tariff name must be unique within coworking");

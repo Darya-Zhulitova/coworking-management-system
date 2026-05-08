@@ -28,14 +28,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
   const coworkingId = parseId((await params).id);
   if (coworkingId == null) return NextResponse.json({ message: 'Invalid coworking id.' }, { status: 400 });
-  let payload: { name?: string; floorId?: number; placeTypeId?: number; locX?: number; locY?: number };
+  let payload: {
+    name?: string;
+    floorId?: number;
+    placeTypeId?: number;
+    locX?: number;
+    locY?: number;
+    amenities?: string[]
+  };
   try {
     payload = await request.json() as {
       name?: string;
       floorId?: number;
       placeTypeId?: number;
       locX?: number;
-      locY?: number
+      locY?: number;
+      amenities?: string[]
     };
   } catch {
     return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
@@ -48,6 +56,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       placeTypeId: payload.placeTypeId,
       locX: payload.locX,
       locY: payload.locY,
+      amenities: payload.amenities,
     }), { status: 201 });
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });

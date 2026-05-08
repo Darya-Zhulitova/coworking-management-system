@@ -6,6 +6,7 @@ import com.hse.adminservice.common.time.TimeProvider;
 import com.hse.adminservice.coworking.application.CoworkingConfigurationVersionService;
 import com.hse.adminservice.coworking.domain.Coworking;
 import com.hse.adminservice.coworking.persistence.CoworkingRepository;
+import com.hse.adminservice.files.FileStorageService;
 import com.hse.adminservice.rbac.authorization.AdminAuthorizationService;
 import com.hse.adminservice.rbac.domain.Grant;
 import com.hse.adminservice.space.floor.domain.Floor;
@@ -18,6 +19,7 @@ import com.hse.adminservice.space.place.persistence.PlaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +35,7 @@ public class FloorServiceImpl implements FloorService {
     private final FloorMapper floorMapper;
     private final CoworkingConfigurationVersionService configurationVersionService;
     private final TimeProvider timeProvider;
+    private final FileStorageService fileStorageService;
 
     @Override
     @Transactional
@@ -95,6 +98,20 @@ public class FloorServiceImpl implements FloorService {
         floor.setImageFileId(trimToNull(request.imageFileId()));
         if (request.active() != null)
             floor.setActive(request.active());
+        floor.setUpdatedAt(timeProvider.now());
+        Floor saved = floorRepository.save(floor);
+        configurationVersionService.bumpVersion(coworkingId);
+        return floorMapper.toResponse(saved);
+    }
+
+
+    @Override
+    @Transactional
+    public FloorResponse uploadPlan(Long coworkingId, Long floorId, MultipartFile file) {
+        authorizationService.requireCoworkingAction(coworkingId, Grant.FLOOR_EDIT);
+        Floor floor = getExistingFloor(coworkingId, floorId);
+        String fileId = fileStorageService.uploadFloorPlan(floorId, file).fileId();
+        floor.setImageFileId(fileId);
         floor.setUpdatedAt(timeProvider.now());
         Floor saved = floorRepository.save(floor);
         configurationVersionService.bumpVersion(coworkingId);

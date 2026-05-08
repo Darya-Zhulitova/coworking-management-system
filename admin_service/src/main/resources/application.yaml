@@ -32,6 +32,15 @@ integration:
   internal-api:
     key: demo-internal-key
 
+storage:
+  s3:
+    endpoint: http://127.0.0.1:9000
+    public-base-url: http://127.0.0.1:9000
+    access-key: rustfsadmin
+    secret-key: rustfsadmin
+    bucket: coworking-files
+    region: local
+
 server:
   port: 8081
 

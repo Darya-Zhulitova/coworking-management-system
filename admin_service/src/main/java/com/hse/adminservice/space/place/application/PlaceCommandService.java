@@ -49,6 +49,7 @@ public class PlaceCommandService {
         if (placeRepository.existsByFloorIdAndNameAndArchivedFalse(floor.getId(), request.name().trim())) {
             throw new ConflictException("Place name must be unique within floor");
         }
+        validateCoordinates(request.locX(), request.locY());
         LocalDateTime now = timeProvider.now();
         Place place = placeRepository.save(Place.builder()
                 .name(request.name().trim())
@@ -72,12 +73,12 @@ public class PlaceCommandService {
         authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_EDIT);
         Place place = getExistingPlace(coworkingId, placeId);
         String normalizedName = request.name().trim();
-        if (!place.getName().equalsIgnoreCase(normalizedName) && placeRepository.existsByFloorIdAndNameAndArchivedFalse(
-                place.getFloor().getId(),
+        if (!place.getName().equalsIgnoreCase(normalizedName) && placeRepository.existsByFloorIdAndNameAndArchivedFalse(place.getFloor().getId(),
                 normalizedName
         )) {
             throw new ConflictException("Place name must be unique within floor");
         }
+        validateCoordinates(request.locX(), request.locY());
         place.setName(normalizedName);
         place.setLocX(request.locX());
         place.setLocY(request.locY());
@@ -114,6 +115,12 @@ public class PlaceCommandService {
         place.setUpdatedAt(now);
         placeRepository.save(place);
         configurationVersionService.bumpVersion(coworkingId);
+    }
+
+    private void validateCoordinates(Object locX, Object locY) {
+        if ((locX == null) != (locY == null)) {
+            throw new ConflictException("Both locX and locY must be set or both must be empty");
+        }
     }
 
     private Place getExistingPlace(Long coworkingId, Long placeId) {

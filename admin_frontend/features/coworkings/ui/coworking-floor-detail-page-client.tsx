@@ -14,6 +14,7 @@ import { FullPageError, FullPageLoader } from '@/components/page-state';
 import { useAppContext } from '@/features/context/use-app-context';
 import { requestJson } from '@/lib/client/api';
 import { formatRublesFromKopecks } from '@/lib/format/money';
+import { FloorPlanEditor } from '@/features/coworkings/ui/floor-plan-editor';
 import type {
   FloorDto,
   PlaceClosingDto,
@@ -149,66 +150,68 @@ export function CoworkingFloorDetailPageClient({ coworkingId, floorId }: { cowor
   if (!floor) return <FullPageError message="Этаж не найден."/>;
 
   return <>
-    <main className="page-shell"><Container className="py-4 py-md-5"><h2 className="mb-4">Редактирование мест на
-      этаже</h2><Stack gap={4}>
-      {submitMessage ? <Alert variant="success" className="mb-0">{submitMessage}</Alert> : null}
-      {errorMessage ? <Alert variant="danger" className="mb-0">{errorMessage}</Alert> : null}
-      {/*{preview ? <Alert variant="warning" className="mb-0">{preview.summary} Затронутые*/}
-      {/*  бронирования: {preview.simulatedAffectedFutureBookings}. Даты: {preview.affectedDates.join(', ') || 'нет'}.*/}
-      {/*  Команды: {formatUserDomainCommandList(preview.plannedUserDomainCommands) || 'нет'}.</Alert> : null}*/}
-      <Card className="content-card"><Card.Body><Card.Title as="h2" className="h4 mb-3">Добавить место на этот
-        этаж</Card.Title>{canManage ?
-        <Form onSubmit={createPlace}><Stack gap={3}><Form.Control placeholder="Название места" value={form.name}
-                                                                  onChange={(e) => setForm((c) => ({
-                                                                    ...c,
-                                                                    name: e.target.value
-                                                                  }))} required/><Form.Select value={form.placeTypeId}
-                                                                                              onChange={(e) => setForm((c) => ({
-                                                                                                ...c,
-                                                                                                placeTypeId: e.target.value
-                                                                                              }))}>{placeTypes.map((pt) =>
-          <option key={pt.id} value={pt.id}>{pt.name} — {pt.tariff.name}</option>)}</Form.Select><Form.Control
-          placeholder="Удобства (через запятую)" value={form.amenities}
-          onChange={(e) => setForm((c) => ({ ...c, amenities: e.target.value }))}/><Button type="submit"
-                                                                                           disabled={savingId === 'create'}>Создать
-          место</Button></Stack></Form> :
-        <Alert variant="secondary" className="mb-0">Недостаточно прав для изменения.</Alert>}</Card.Body></Card>
-      <Card className="content-card"><Card.Body><Card.Title as="h2" className="h4 mb-3">Места на этом
-        этаже</Card.Title><Table responsive hover>
-        <thead>
-        <tr>
-          <th>Название</th>
-          <th>Тип</th>
-          <th>Удобства</th>
-          <th>Бронирования</th>
-          <th>Активные бронирования</th>
-          <th>Закрытия</th>
-          <th>Статус</th>
-          <th>Действия</th>
-        </tr>
-        </thead>
-        <tbody>{places.map((place) => {
-          const op = getOperational(place.id);
-          return <tr key={place.id}>
-            <td>{place.name}</td>
-            <td>{place.placeType.name}</td>
-            <td>{place.amenities?.join(', ') || '—'}</td>
-            <td>{op?.totalBookings ?? 0}</td>
-            <td>{op?.unfinishedBookings ?? 0}</td>
-            <td>{getClosingsCount(place.id)}</td>
-            <td><Badge bg={place.active ? 'success' : 'secondary'}>{place.active ? 'Активен' : 'Неактивен'}</Badge></td>
-            <td><Stack direction="horizontal" gap={2} className="flex-wrap">{canManage ?
-              <Button size="sm" variant="outline-primary" disabled={savingId === place.id}
-                      onClick={() => togglePlace(place)}>{place.active ? 'Деактивировать' : 'Активировать'}</Button> : null}<Button
-              size="sm" variant="outline-secondary" href={`/coworkings/${coworkingId}/settings/schedule`}>Расписание
-              места</Button><Button size="sm" variant="outline-dark"
-                                    href={`/coworkings/${coworkingId}/settings/floors/${floorId}/places/${place.id}/bookings`}>Управление
-              бронированиями</Button></Stack>
-            </td>
-          </tr>;
-        })}</tbody>
-      </Table></Card.Body></Card>
-    </Stack></Container></main>
+    <main className="page-shell"><Container className="py-4 py-md-5"><h2 className="mb-4">Редактирование этажа</h2>
+      <Stack gap={4}>
+        {submitMessage ? <Alert variant="success" className="mb-0">{submitMessage}</Alert> : null}
+        {errorMessage ? <Alert variant="danger" className="mb-0">{errorMessage}</Alert> : null}
+        {/*{preview ? <Alert variant="warning" className="mb-0">{preview.summary} Затронутые*/}
+        {/*  бронирования: {preview.simulatedAffectedFutureBookings}. Даты: {preview.affectedDates.join(', ') || 'нет'}.*/}
+        {/*  Команды: {formatUserDomainCommandList(preview.plannedUserDomainCommands) || 'нет'}.</Alert> : null}*/}
+        <FloorPlanEditor coworkingId={coworkingId} floor={floor} places={places} canManage={canManage} onReload={load}/>
+        <Card className="content-card"><Card.Body><Card.Title as="h2" className="h4 mb-3">Добавить место на этот
+          этаж</Card.Title>{canManage ?
+          <Form onSubmit={createPlace}><Stack gap={3}><Form.Control placeholder="Название места" value={form.name}
+                                                                    onChange={(e) => setForm((c) => ({
+                                                                      ...c,
+                                                                      name: e.target.value
+                                                                    }))} required/><Form.Select value={form.placeTypeId}
+                                                                                                onChange={(e) => setForm((c) => ({
+                                                                                                  ...c,
+                                                                                                  placeTypeId: e.target.value
+                                                                                                }))}>{placeTypes.map((pt) =>
+            <option key={pt.id} value={pt.id}>{pt.name} — {pt.tariff.name}</option>)}</Form.Select><Form.Control
+            placeholder="Удобства (через запятую)" value={form.amenities}
+            onChange={(e) => setForm((c) => ({ ...c, amenities: e.target.value }))}/><Button type="submit"
+                                                                                             disabled={savingId === 'create'}>Создать
+            место</Button></Stack></Form> :
+          <Alert variant="secondary" className="mb-0">Недостаточно прав для изменения.</Alert>}</Card.Body></Card>
+        <Card className="content-card"><Card.Body><Card.Title as="h2" className="h4 mb-3">Места на этом
+          этаже</Card.Title><Table responsive hover>
+          <thead>
+          <tr>
+            <th>Название</th>
+            <th>Тип</th>
+            <th>Удобства</th>
+            <th>Бронирования</th>
+            <th>Активные бронирования</th>
+            <th>Закрытия</th>
+            <th>Статус</th>
+            <th>Действия</th>
+          </tr>
+          </thead>
+          <tbody>{places.map((place) => {
+            const op = getOperational(place.id);
+            return <tr key={place.id}>
+              <td>{place.name}</td>
+              <td>{place.placeType.name}</td>
+              <td>{place.amenities?.join(', ') || '—'}</td>
+              <td>{op?.totalBookings ?? 0}</td>
+              <td>{op?.unfinishedBookings ?? 0}</td>
+              <td>{getClosingsCount(place.id)}</td>
+              <td><Badge bg={place.active ? 'success' : 'secondary'}>{place.active ? 'Активен' : 'Неактивен'}</Badge>
+              </td>
+              <td><Stack direction="horizontal" gap={2} className="flex-wrap">{canManage ?
+                <Button size="sm" variant="outline-primary" disabled={savingId === place.id}
+                        onClick={() => togglePlace(place)}>{place.active ? 'Деактивировать' : 'Активировать'}</Button> : null}<Button
+                size="sm" variant="outline-secondary" href={`/coworkings/${coworkingId}/settings/schedule`}>Расписание
+                места</Button><Button size="sm" variant="outline-dark"
+                                      href={`/coworkings/${coworkingId}/settings/floors/${floorId}/places/${place.id}/bookings`}>Управление
+                бронированиями</Button></Stack>
+              </td>
+            </tr>;
+          })}</tbody>
+        </Table></Card.Body></Card>
+      </Stack></Container></main>
     <Modal show={Boolean(pendingDeactivationPlace && preview)} onHide={() => setPendingDeactivationPlace(null)}
            size="lg" centered><Modal.Header closeButton><Modal.Title>Подтверждение деактивации
       места</Modal.Title></Modal.Header><Modal.Body><p className="mb-2">{preview?.summary}</p><p

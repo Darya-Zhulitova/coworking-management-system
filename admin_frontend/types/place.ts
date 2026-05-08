@@ -30,6 +30,7 @@ export interface FloorDto {
   name: string;
   index: number;
   imageFileId?: string | null;
+  imageUrl?: string | null;
   active: boolean;
   archived: boolean;
   archivedAt?: string | null;
@@ -153,15 +154,15 @@ export interface CreatePlaceRequest {
   name: string;
   floorId: number;
   placeTypeId: number;
-  locX?: number;
-  locY?: number;
+  locX?: number | null;
+  locY?: number | null;
   amenities?: string[];
 }
 
 export interface UpdatePlaceRequest {
   name: string;
-  locX?: number;
-  locY?: number;
+  locX?: number | null;
+  locY?: number | null;
   amenities?: string[];
   active?: boolean;
 }
@@ -216,7 +217,14 @@ export interface CoworkingConfigSnapshot {
   workingHoursLabel?: string;
   heroTitle?: string | null;
   heroText?: string | null;
-  floors: Array<{ id: number; name: string; index: number; imageFileId?: string | null; active: boolean }>;
+  floors: Array<{
+    id: number;
+    name: string;
+    index: number;
+    imageFileId?: string | null;
+    imageUrl?: string | null;
+    active: boolean
+  }>;
   tariffs: Array<{
     id: number;
     name: string;

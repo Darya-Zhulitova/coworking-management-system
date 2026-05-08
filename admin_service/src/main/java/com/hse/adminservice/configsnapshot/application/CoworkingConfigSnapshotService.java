@@ -6,6 +6,7 @@ import com.hse.adminservice.common.error.ResourceNotFoundException;
 import com.hse.adminservice.common.time.TimeProvider;
 import com.hse.adminservice.configsnapshot.dto.CoworkingConfigSnapshotResponse;
 import com.hse.adminservice.coworking.persistence.CoworkingRepository;
+import com.hse.adminservice.files.FileStorageService;
 import com.hse.adminservice.pricing.discount.domain.TariffDiscountRule;
 import com.hse.adminservice.pricing.tariff.persistence.TariffRepository;
 import com.hse.adminservice.servicecatalog.persistence.ServiceRequestTypeRepository;
@@ -34,6 +35,7 @@ public class CoworkingConfigSnapshotService {
     private final PlaceMapper placeMapper;
     private final com.hse.adminservice.coworking.mapper.CoworkingMapper coworkingMapper;
     private final TimeProvider timeProvider;
+    private final FileStorageService fileStorageService;
 
     public CoworkingConfigSnapshotResponse getSnapshot(Long coworkingId) {
         var coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
@@ -52,13 +54,9 @@ public class CoworkingConfigSnapshotService {
                 .imageUrls(coworkingMapper.readImageUrls(coworking.getImageUrlsJson()))
                 .floors(floorRepository.findAllByCoworkingIdAndArchivedFalseOrderByIndexAsc(coworkingId)
                         .stream()
-                        .map(floor -> CoworkingConfigSnapshotResponse.SnapshotFloorDto.builder()
-                                .id(floor.getId())
-                                .name(floor.getName())
-                                .index(floor.getIndex())
-                                .imageFileId(floor.getImageFileId())
-                                .active(floor.getActive())
-                                .build())
+                        .map(floor -> CoworkingConfigSnapshotResponse.SnapshotFloorDto.builder().id(floor.getId()).name(
+                                floor.getName()).index(floor.getIndex()).imageFileId(floor.getImageFileId()).imageUrl(
+                                fileStorageService.publicUrl(floor.getImageFileId())).active(floor.getActive()).build())
                         .toList())
                 .tariffs(tariffRepository.findAllByCoworkingIdAndArchivedFalseOrderByNameAsc(coworkingId)
                         .stream()

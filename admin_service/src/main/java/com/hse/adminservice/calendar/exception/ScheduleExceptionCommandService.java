@@ -84,8 +84,7 @@ public class ScheduleExceptionCommandService {
         authorizationService.requireCoworkingAction(coworkingId, Grant.SCHEDULE_EDIT);
         Coworking coworking = getCoworking(coworkingId);
         scheduleExceptionValidator.ensureCanBeCreated(coworkingId, request.getDate());
-        OperationalImpactResponse impact = request.getType() == ScheduleExceptionType.CLOSE ? userBookingImpactPort.commitCloseDay(
-                coworking,
+        OperationalImpactResponse impact = request.getType() == ScheduleExceptionType.CLOSE ? userBookingImpactPort.commitCloseDay(coworking,
                 request.getDate(),
                 request.getName().trim()
         ) : impactResponseFactory.noImpact(

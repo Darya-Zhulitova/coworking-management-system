@@ -207,6 +207,13 @@ export async function archiveFloor(token: string, coworkingId: number, floorId: 
   await requestBackend<void>(`/coworkings/${coworkingId}/floors/${floorId}`, { method: 'DELETE' }, token);
 }
 
+export async function uploadFloorPlan(token: string, coworkingId: number, floorId: number, formData: FormData): Promise<FloorDto> {
+  return requestBackend<FloorDto>(`/coworkings/${coworkingId}/floors/${floorId}/plan`, {
+    method: 'POST',
+    body: formData,
+  }, token);
+}
+
 export async function getTariffs(token: string, coworkingId: number): Promise<TariffDto[]> {
   return requestBackend<TariffDto[]>(`/coworkings/${coworkingId}/tariffs`, undefined, token);
 }
