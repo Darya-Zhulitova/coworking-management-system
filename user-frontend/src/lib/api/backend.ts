@@ -88,7 +88,6 @@ export async function getCurrentUser(token: string): Promise<UserProfile> {
     email: data.email,
     name: data.name,
     description: data.description ?? '',
-    avatarLabel: data.name.trim().charAt(0).toUpperCase() || 'U',
   };
 }
 
@@ -171,7 +170,6 @@ export interface BackendBookingListItem {
   requestId: string;
   tariffId: number;
   pricePerDay: number;
-  appliedDiscountPercent: number;
   fullRefundHoursBefore: number;
   lateCancellationRefundPercent: number;
   cancellationPreviewMinorUnits: number;
@@ -206,7 +204,6 @@ function mapBooking(item: BackendBookingListItem): Booking {
     status: item.status,
     tariffId: item.tariffId,
     pricePerDay: item.pricePerDay,
-    appliedDiscountPercent: item.appliedDiscountPercent,
     fullRefundHoursBefore: item.fullRefundHoursBefore,
     lateCancellationRefundPercent: item.lateCancellationRefundPercent,
     cancellationPreview: item.cancellationPreviewMinorUnits,

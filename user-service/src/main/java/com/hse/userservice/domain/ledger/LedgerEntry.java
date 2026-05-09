@@ -30,7 +30,7 @@ public class LedgerEntry {
     @Column(nullable = false)
     private Long amount;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String name;
 
     @Column(length = 1000)

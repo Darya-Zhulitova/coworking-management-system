@@ -23,7 +23,7 @@ public class ServiceRequest {
     @Column(name = "type_id", nullable = false)
     private Long typeId;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String name;
 
     @Column(nullable = false)

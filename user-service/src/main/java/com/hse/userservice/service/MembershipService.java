@@ -56,7 +56,6 @@ public class MembershipService {
                 coworking.heroTitle(),
                 coworking.heroText(),
                 coworking.imageUrls(),
-                coworking.autoApproveMembership(),
                 coworking.active(),
                 membership.getId(),
                 membership.getStatus().name().toLowerCase(),

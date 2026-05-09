@@ -72,38 +72,6 @@ public class BookingService {
                 membership.getStatus().name().toLowerCase(),
                 balanceService.getBalanceMinorUnits(membership.getId()),
                 effectivePreviewDate,
-                snapshot.floors()
-                        .stream()
-                        .filter(item -> Boolean.TRUE.equals(item.active()))
-                        .map(item -> new BookingInitResponseDto.FloorItemDto(item.id(), item.name(), item.index()))
-                        .toList(),
-                snapshot.placeTypes()
-                        .stream()
-                        .filter(item -> Boolean.TRUE.equals(item.active()))
-                        .map(item -> new BookingInitResponseDto.PlaceTypeItemDto(
-                                item.id(),
-                                item.name(),
-                                item.tariffId()
-                        ))
-                        .toList(),
-                snapshot.tariffs()
-                        .stream()
-                        .filter(item -> Boolean.TRUE.equals(item.active()))
-                        .map(item -> new BookingInitResponseDto.TariffItemDto(
-                                item.id(),
-                                item.name(),
-                                item.pricePerDay(),
-                                item.minBookingDays(),
-                                item.discountRules()
-                                        .stream()
-                                        .map(rule -> new BookingInitResponseDto.DiscountRuleItemDto(
-                                                rule.id(),
-                                                rule.thresholdQuantity(),
-                                                rule.discountPercent()
-                                        ))
-                                        .toList()
-                        ))
-                        .toList(),
                 availablePlaces
         );
     }
@@ -348,9 +316,7 @@ public class BookingService {
         return new BookingInitResponseDto.PlaceItemDto(
                 place.id(),
                 place.name(),
-                place.floorId(),
                 floor == null ? "—" : floor.name(),
-                place.placeTypeId(),
                 placeType == null ? "—" : placeType.name(),
                 tariff == null ? null : tariff.id(),
                 tariff == null ? 0 : tariff.pricePerDay(),
@@ -374,7 +340,6 @@ public class BookingService {
                 booking.getRequestId(),
                 booking.getTariffId(),
                 booking.getPricePerDay(),
-                booking.getAppliedDiscountPercent(),
                 booking.getFullRefundHoursBefore(),
                 booking.getLateCancellationRefundPercent(),
                 booking.getActive() ? calculateCancellationPreview(booking) : 0L

@@ -17,7 +17,6 @@ export type UserProfile = {
   name: string;
   email: string;
   description: string;
-  avatarLabel: string;
 };
 
 export type MembershipSummary = {
@@ -42,7 +41,6 @@ export type Booking = {
   status: BookingPersistedStatus;
   tariffId?: number;
   pricePerDay?: number;
-  appliedDiscountPercent?: number;
   fullRefundHoursBefore: number;
   lateCancellationRefundPercent: number;
   cancellationPreview?: number;
@@ -86,38 +84,10 @@ export type BookingCartItem = {
   date: string;
 };
 
-export type BookingInitFloor = {
-  id: number;
-  name: string;
-  index: number;
-};
-
-export type BookingInitPlaceType = {
-  id: number;
-  name: string;
-  tariffId: number;
-};
-
-export type BookingInitTariffDiscountRule = {
-  id: number;
-  thresholdQuantity: number;
-  discountPercent: number;
-};
-
-export type BookingInitTariff = {
-  id: number;
-  name: string;
-  pricePerDay: number;
-  minBookingDays: number;
-  discountRules: BookingInitTariffDiscountRule[];
-};
-
 export type BookingInitPlace = {
   id: number;
   name: string;
-  floorId: number;
   floorName: string;
-  placeTypeId: number;
   placeTypeName: string;
   tariffId: number;
   pricePerDay: number;
@@ -133,9 +103,6 @@ export type BookingInitData = {
   membershipStatus: MembershipStatus;
   balanceMinorUnits: number;
   previewDate: string;
-  floors: BookingInitFloor[];
-  placeTypes: BookingInitPlaceType[];
-  tariffs: BookingInitTariff[];
   places: BookingInitPlace[];
 };
 
@@ -188,7 +155,6 @@ export type UserCoworkingDetails = {
   heroTitle?: string | null;
   heroText?: string | null;
   imageUrls: string[];
-  autoApproveMembership: boolean;
   active: boolean;
   membershipId?: number | null;
   membershipStatus?: MembershipStatus | null;

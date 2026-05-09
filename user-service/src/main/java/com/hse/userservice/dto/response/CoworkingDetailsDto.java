@@ -11,7 +11,6 @@ public record CoworkingDetailsDto(
         String heroTitle,
         String heroText,
         List<String> imageUrls,
-        Boolean autoApproveMembership,
         Boolean active,
         Long membershipId,
         String membershipStatus,

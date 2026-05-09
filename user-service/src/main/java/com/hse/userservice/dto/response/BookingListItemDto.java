@@ -14,7 +14,6 @@ public record BookingListItemDto(
         String requestId,
         Long tariffId,
         Integer pricePerDay,
-        Integer appliedDiscountPercent,
         Integer fullRefundHoursBefore,
         Integer lateCancellationRefundPercent,
         Long cancellationPreviewMinorUnits

@@ -1,7 +1,5 @@
 package com.hse.userservice.internal.service;
 
-import com.hse.userservice.client.AdminServiceClient;
-import com.hse.userservice.client.dto.CoworkingConfigSnapshot;
 import com.hse.userservice.domain.booking.Booking;
 import com.hse.userservice.domain.booking.BookingStatus;
 import com.hse.userservice.domain.ledger.LedgerEntry;
@@ -37,7 +35,6 @@ public class UserDeactivationInternalService {
     private final MembershipRepository membershipRepository;
     private final UserRepository userRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
-    private final AdminServiceClient adminServiceClient;
 
     public OperationalImpactResponse preview(UserDeactivateOperationRequest request) {
         return buildResponse(request, findAffectedBookings(request), "preview");
@@ -80,11 +77,10 @@ public class UserDeactivationInternalService {
     ) {
         Map<Long, Membership> memberships = membershipsById(bookings);
         Map<Long, User> users = usersByMembership(memberships.values());
-        Map<Long, CoworkingConfigSnapshot.Place> places = placesById(request.coworkingId());
         List<AffectedBookingResponse> affected = bookings.stream()
                 .sorted(Comparator.comparing(Booking::getDate)
                         .thenComparing(Booking::getId))
-                .map(booking -> toAffectedBooking(booking, memberships, users, places))
+                .map(booking -> toAffectedBooking(booking, memberships, users))
                 .toList();
         int total = affected.stream()
                 .map(AffectedBookingResponse::compensationAmount)
@@ -96,7 +92,7 @@ public class UserDeactivationInternalService {
                 request.targetId(),
                 request.targetName(),
                 affected.size(),
-                plannedCommands(mode, affected.isEmpty()),
+                List.of(),
                 affectedDates(request, bookings),
                 affected,
                 total,
@@ -108,12 +104,10 @@ public class UserDeactivationInternalService {
     private AffectedBookingResponse toAffectedBooking(
             Booking booking,
             Map<Long, Membership> memberships,
-            Map<Long, User> users,
-            Map<Long, CoworkingConfigSnapshot.Place> places
+            Map<Long, User> users
     ) {
         Membership membership = memberships.get(booking.getMembershipId());
         User user = membership == null ? null : users.get(membership.getUserId());
-        CoworkingConfigSnapshot.Place place = places.get(booking.getPlaceId());
         return new AffectedBookingResponse(
                 booking.getId(),
                 booking.getStatus().name(),
@@ -124,11 +118,11 @@ public class UserDeactivationInternalService {
                 new BookingUserResponse(
                         user == null ? null : user.getId(),
                         user == null ? "Пользователь" : user.getName(),
-                        user == null ? "" : user.getEmail()
+                        null
                 ),
                 new BookingPlaceResponse(
                         booking.getPlaceId(),
-                        place == null ? "Место #" + booking.getPlaceId() : place.name()
+                        "Место #" + booking.getPlaceId()
                 )
         );
     }
@@ -170,30 +164,10 @@ public class UserDeactivationInternalService {
                 .collect(Collectors.toMap(User::getId, Function.identity()));
     }
 
-    private Map<Long, CoworkingConfigSnapshot.Place> placesById(Long coworkingId) {
-        try {
-            return adminServiceClient.getCoworkingConfigSnapshot(coworkingId)
-                    .places()
-                    .stream()
-                    .collect(Collectors.toMap(CoworkingConfigSnapshot.Place::id, Function.identity()));
-        } catch (RuntimeException exception) {
-            return Map.of();
-        }
-    }
-
     private List<String> affectedDates(UserDeactivateOperationRequest request, List<Booking> bookings) {
         if (request.affectedDates() != null && !request.affectedDates().isEmpty())
             return request.affectedDates().stream().map(LocalDate::toString).toList();
         return bookings.stream().map(Booking::getDate).distinct().sorted().map(LocalDate::toString).toList();
-    }
-
-    private List<String> plannedCommands(String mode, boolean empty) {
-        if (empty)
-            return List.of();
-        return "commit".equals(mode) ? List.of("cancel-active-bookings", "write-compensation-ledger-entries") : List.of(
-                "preview-active-bookings",
-                "calculate-compensation"
-        );
     }
 
     private Long requirePlaceId(UserDeactivateOperationRequest request) {

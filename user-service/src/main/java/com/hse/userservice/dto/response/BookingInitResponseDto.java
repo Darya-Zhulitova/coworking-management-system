@@ -10,47 +10,12 @@ public record BookingInitResponseDto(
         String membershipStatus,
         Long balanceMinorUnits,
         LocalDate previewDate,
-        List<FloorItemDto> floors,
-        List<PlaceTypeItemDto> placeTypes,
-        List<TariffItemDto> tariffs,
         List<PlaceItemDto> places
 ) {
-    public record FloorItemDto(
-            Long id,
-            String name,
-            Integer index
-    ) {
-    }
-
-    public record PlaceTypeItemDto(
-            Long id,
-            String name,
-            Long tariffId
-    ) {
-    }
-
-    public record TariffItemDto(
-            Long id,
-            String name,
-            Integer pricePerDay,
-            Integer minBookingDays,
-            List<DiscountRuleItemDto> discountRules
-    ) {
-    }
-
-    public record DiscountRuleItemDto(
-            Long id,
-            Integer thresholdQuantity,
-            Integer discountPercent
-    ) {
-    }
-
     public record PlaceItemDto(
             Long id,
             String name,
-            Long floorId,
             String floorName,
-            Long placeTypeId,
             String placeTypeName,
             Long tariffId,
             Integer pricePerDay,

@@ -1,7 +1,5 @@
 package com.hse.userservice.internal.service;
 
-import com.hse.userservice.client.AdminServiceClient;
-import com.hse.userservice.domain.booking.Booking;
 import com.hse.userservice.domain.ledger.LedgerEntry;
 import com.hse.userservice.domain.ledger.LedgerEntryType;
 import com.hse.userservice.domain.membership.Membership;
@@ -22,15 +20,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.YearMonth;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -40,38 +34,27 @@ public class UserOperationsInternalService {
     private final UserRepository userRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
     private final PayRequestRepository payRequestRepository;
-    private final BookingRepository bookingRepository;
     private final ServiceRequestRepository serviceRequestRepository;
     private final MessageRepository messageRepository;
     private final BalanceService balanceService;
-    private final AdminServiceClient adminServiceClient;
 
     public List<CoworkingUserReadModelDto> getUsers(Long coworkingId) {
         List<Membership> memberships = membershipRepository.findAllByCoworkingIdOrderByCreatedAtDesc(coworkingId);
         Map<Long, User> users = usersById(memberships);
         Map<Long, Long> balances = balanceService.getBalancesMinorUnits(membershipIds(memberships));
-        Map<Long, Integer> totalBookings = bookingCountByMembership(memberships, false);
-        Map<Long, Integer> unfinishedBookings = bookingCountByMembership(memberships, true);
-
         return memberships.stream().map(membership -> new CoworkingUserReadModelDto(
                 membership.getUserId(),
                 users.get(membership.getUserId()).getName(),
                 membership.getCreatedAt().toLocalDate(),
                 toInt(balances.getOrDefault(membership.getId(), 0L)),
-                totalBookings.getOrDefault(membership.getId(), 0),
-                unfinishedBookings.getOrDefault(membership.getId(), 0)
+                null,
+                null
         )).toList();
     }
 
     public UserQueueSummaryDto getSummary(Long coworkingId) {
         List<Membership> memberships = membershipRepository.findAllByCoworkingIdOrderByCreatedAtDesc(coworkingId);
         List<Long> membershipIds = membershipIds(memberships);
-        int currentBalance = toInt(balanceService.getBalancesMinorUnits(membershipIds)
-                .values()
-                .stream()
-                .mapToLong(Long::longValue)
-                .sum());
-        int monthlyIncome = currentMonthIncome(coworkingId);
         return new UserQueueSummaryDto(
                 memberships.size(),
                 (int) memberships.stream().filter(item -> item.getStatus() == MembershipStatus.PENDING).count(),
@@ -80,51 +63,45 @@ public class UserOperationsInternalService {
                         membershipIds,
                         List.of(ServiceRequestStatus.RESOLVED, ServiceRequestStatus.REJECTED)
                 ),
-                (int) bookingRepository.countByMembershipIdIn(membershipIds),
-                (int) bookingRepository.countByMembershipIdInAndActiveTrue(membershipIds),
-                currentBalance,
-                monthlyIncome,
-                calculateMonthlyOccupancyPercent(coworkingId)
+                null,
+                null,
+                null,
+                null,
+                null
         );
     }
 
     public UserAnalyticsDto getAnalytics(Long coworkingId) {
         List<Membership> memberships = membershipRepository.findAllByCoworkingIdOrderByCreatedAtDesc(coworkingId);
         List<Long> membershipIds = membershipIds(memberships);
-        int totalBalance = toInt(balanceService.getBalancesMinorUnits(membershipIds)
-                .values()
-                .stream()
-                .mapToLong(Long::longValue)
-                .sum());
         return new UserAnalyticsDto(
                 memberships.size(),
                 (int) memberships.stream().filter(item -> item.getStatus() == MembershipStatus.ACTIVE).count(),
                 (int) memberships.stream().filter(item -> item.getStatus() == MembershipStatus.PENDING).count(),
                 (int) memberships.stream().filter(item -> item.getStatus() == MembershipStatus.BLOCKED).count(),
-                (int) bookingRepository.countByMembershipIdIn(membershipIds),
-                (int) bookingRepository.countByMembershipIdInAndActiveTrue(membershipIds),
+                null,
+                null,
                 (int) serviceRequestRepository.countByMembershipIdInAndStatusNotIn(
                         membershipIds,
                         List.of(ServiceRequestStatus.RESOLVED, ServiceRequestStatus.REJECTED)
                 ),
                 (int) payRequestRepository.countByMembershipIdInAndStatus(membershipIds, PayRequestStatus.PENDING),
-                totalBalance,
-                currentMonthIncome(coworkingId),
-                calculateMonthlyOccupancyPercent(coworkingId),
-                monthlyIncomeHistory(coworkingId),
-                occupancyHistory(coworkingId)
+                null,
+                null,
+                null,
+                List.of(),
+                List.of()
         );
     }
 
     public List<MembershipQueueItemDto> getMemberships(Long coworkingId) {
-        String coworkingName = adminServiceClient.getCoworkingInfo(coworkingId).name();
         List<Membership> memberships = membershipRepository.findAllByCoworkingIdOrderByCreatedAtDesc(coworkingId);
         Map<Long, User> users = usersById(memberships);
         return memberships.stream().map(item -> new MembershipQueueItemDto(
                 item.getId(),
                 item.getUserId(),
                 users.get(item.getUserId()).getName(),
-                coworkingName,
+                null,
                 item.getStatus().name().toLowerCase(),
                 item.getCreatedAt().toLocalDate()
         )).toList();
@@ -164,7 +141,6 @@ public class UserOperationsInternalService {
                 Function.identity()
         ));
         Map<Long, User> users = usersById(memberships);
-        Map<Long, String> requestTypeNames = requestTypeNames(coworkingId);
         return serviceRequestRepository.findAllByMembershipIdInOrderByCreatedAtDesc(membershipIds(memberships))
                 .stream()
                 .map(item -> {
@@ -175,7 +151,7 @@ public class UserOperationsInternalService {
                             item.getMembershipId(),
                             membership.getUserId(),
                             user.getName(),
-                            requestTypeNames.getOrDefault(item.getTypeId(), "Unknown type"),
+                            "Type #" + item.getTypeId(),
                             item.getName(),
                             item.getCost(),
                             item.getStatus().name().toLowerCase(),
@@ -190,29 +166,19 @@ public class UserOperationsInternalService {
         Membership membership = getMembershipForCoworking(coworkingId, request.getMembershipId());
         User user = userRepository.findById(membership.getUserId()).orElseThrow(() -> new ResourceNotFoundException(
                 "User not found for service request."));
-        String typeName = requestTypeNames(coworkingId).getOrDefault(
-                request.getTypeId(),
-                "Type #" + request.getTypeId()
-        );
-        LocalDateTime updatedAt = messageRepository.findAllByServiceRequestIdOrderByTimestampAsc(request.getId())
-                .stream()
-                .map(Message::getTimestamp)
-                .max(LocalDateTime::compareTo)
-                .orElse(request.getResolvedAt() == null ? request.getCreatedAt() : request.getResolvedAt());
-
         return new InternalServiceRequestDetailDto(
                 request.getId(),
                 request.getMembershipId(),
                 membership.getUserId(),
                 user.getName(),
-                user.getEmail(),
-                typeName,
+                null,
+                "Type #" + request.getTypeId(),
                 request.getName(),
                 request.getCost(),
-                balanceService.getBalanceMinorUnits(membership.getId()),
+                null,
                 request.getStatus().name().toLowerCase(),
                 request.getCreatedAt(),
-                updatedAt,
+                request.getCreatedAt(),
                 request.getResolvedAt()
         );
     }
@@ -405,74 +371,6 @@ public class UserOperationsInternalService {
         return memberships.stream().map(Membership::getId).toList();
     }
 
-    private Map<Long, Integer> bookingCountByMembership(List<Membership> memberships, boolean onlyActive) {
-        return bookingRepository.findAllByMembershipIdInOrderByDateDesc(membershipIds(memberships))
-                .stream()
-                .filter(item -> !onlyActive || Boolean.TRUE.equals(item.getActive()))
-                .collect(Collectors.groupingBy(
-                        Booking::getMembershipId,
-                        Collectors.reducing(0, item -> 1, Integer::sum)
-                ));
-    }
-
-    private int currentMonthIncome(Long coworkingId) {
-        YearMonth month = YearMonth.now();
-        LocalDateTime from = month.atDay(1).atStartOfDay();
-        LocalDateTime to = month.plusMonths(1).atDay(1).atStartOfDay();
-        return toInt(ledgerEntryRepository.findAllByCoworkingIdAndTimestampBetweenOrderByTimestampAsc(
-                coworkingId,
-                from,
-                to
-        ).stream().filter(item -> EnumSet.of(LedgerEntryType.BOOKING_CHARGE, LedgerEntryType.SERVICE_REQUEST_CHARGE)
-                .contains(item.getType())).mapToLong(item -> Math.abs(item.getAmount())).sum());
-    }
-
-    private int calculateMonthlyOccupancyPercent(Long coworkingId) {
-        LocalDate now = LocalDate.now();
-        long currentMonthBookings = bookingRepository.countByCoworkingIdAndActiveTrueAndDateBetween(
-                coworkingId,
-                now.withDayOfMonth(1),
-                now.withDayOfMonth(now.lengthOfMonth())
-        );
-        return (int) Math.min(100, currentMonthBookings * 8);
-    }
-
-    private List<AnalyticsMetricPointDto> monthlyIncomeHistory(Long coworkingId) {
-        return IntStream.rangeClosed(0, 5).mapToObj(offset -> YearMonth.now().minusMonths(5 - offset)).map(month -> {
-            LocalDateTime from = month.atDay(1).atStartOfDay();
-            LocalDateTime to = month.plusMonths(1).atDay(1).atStartOfDay();
-            int value = toInt(ledgerEntryRepository.findAllByCoworkingIdAndTimestampBetweenOrderByTimestampAsc(
-                    coworkingId,
-                    from,
-                    to
-            ).stream().filter(item -> EnumSet.of(LedgerEntryType.BOOKING_CHARGE, LedgerEntryType.SERVICE_REQUEST_CHARGE)
-                    .contains(item.getType())).mapToLong(item -> Math.abs(item.getAmount())).sum());
-            return new AnalyticsMetricPointDto(month.getMonth().name().substring(0, 3), value);
-        }).toList();
-    }
-
-    private List<AnalyticsMetricPointDto> occupancyHistory(Long coworkingId) {
-        return IntStream.rangeClosed(0, 5).mapToObj(offset -> YearMonth.now().minusMonths(5 - offset)).map(month -> {
-            long bookings = bookingRepository.countByCoworkingIdAndActiveTrueAndDateBetween(
-                    coworkingId,
-                    month.atDay(1),
-                    month.atEndOfMonth()
-            );
-            return new AnalyticsMetricPointDto(
-                    month.getMonth().name().substring(0, 3),
-                    (int) Math.min(100, bookings * 8)
-            );
-        }).toList();
-    }
-
-    private Map<Long, String> requestTypeNames(Long coworkingId) {
-        return adminServiceClient.getCoworkingConfigSnapshot(coworkingId).serviceRequestTypes().stream().collect(
-                Collectors.toMap(
-                        com.hse.userservice.client.dto.CoworkingConfigSnapshot.ServiceRequestType::id,
-                        com.hse.userservice.client.dto.CoworkingConfigSnapshot.ServiceRequestType::name
-                ));
-    }
-
     private InternalServiceRequestMessageDto toInternalMessageDto(Message message, User user) {
         return new InternalServiceRequestMessageDto(
                 message.getId(),
@@ -485,7 +383,7 @@ public class UserOperationsInternalService {
                 },
                 message.getText(),
                 message.getTimestamp(),
-                message.getReadAt()
+                null
         );
     }
 
