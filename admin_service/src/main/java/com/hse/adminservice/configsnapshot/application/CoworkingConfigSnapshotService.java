@@ -54,9 +54,14 @@ public class CoworkingConfigSnapshotService {
                 .imageUrls(coworkingMapper.readImageUrls(coworking.getImageUrlsJson()))
                 .floors(floorRepository.findAllByCoworkingIdAndArchivedFalseOrderByIndexAsc(coworkingId)
                         .stream()
-                        .map(floor -> CoworkingConfigSnapshotResponse.SnapshotFloorDto.builder().id(floor.getId()).name(
-                                floor.getName()).index(floor.getIndex()).imageFileId(floor.getImageFileId()).imageUrl(
-                                fileStorageService.publicUrl(floor.getImageFileId())).active(floor.getActive()).build())
+                        .map(floor -> CoworkingConfigSnapshotResponse.SnapshotFloorDto.builder()
+                                .id(floor.getId())
+                                .name(floor.getName())
+                                .index(floor.getIndex())
+                                .imageFileId(floor.getImageFileId())
+                                .imageUrl(fileStorageService.presignedUrl(floor.getImageFileId()))
+                                .active(floor.getActive())
+                                .build())
                         .toList())
                 .tariffs(tariffRepository.findAllByCoworkingIdAndArchivedFalseOrderByNameAsc(coworkingId)
                         .stream()

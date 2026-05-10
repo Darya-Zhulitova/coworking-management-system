@@ -39,7 +39,8 @@ storage:
     access-key: rustfsadmin
     secret-key: rustfsadmin
     bucket: coworking-files
-    region: local
+    region: us-east-1
+    presigned-url-ttl-minutes: 60
 
 server:
   port: 8081

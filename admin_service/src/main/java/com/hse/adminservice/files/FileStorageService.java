@@ -7,9 +7,13 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -21,13 +25,12 @@ public class FileStorageService {
     private static final long MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
     private final S3Client s3Client;
+    private final S3Presigner s3Presigner;
     private final FileStorageProperties properties;
 
     public StoredFileResponse uploadFloorPlan(Long floorId, MultipartFile file) {
         validateImage(file);
-
-        String extension = extensionFor(file.getContentType());
-        String fileId = "floor-plans/%d/%s.%s".formatted(floorId, UUID.randomUUID(), extension);
+        String fileId = createFloorPlanFileId(floorId, file.getContentType());
 
         try (InputStream inputStream = file.getInputStream()) {
             s3Client.putObject(
@@ -38,18 +41,26 @@ public class FileStorageService {
                             .build(), RequestBody.fromInputStream(inputStream, file.getSize())
             );
 
-            return new StoredFileResponse(fileId, publicUrl(fileId));
+            return new StoredFileResponse(fileId, presignedUrl(fileId));
         } catch (Exception exception) {
             throw new ConflictException("Failed to upload floor plan image");
         }
     }
 
-    public String publicUrl(String fileId) {
+    public String presignedUrl(String fileId) {
         if (!StringUtils.hasText(fileId)) {
             return null;
         }
 
-        return properties.publicBaseUrl().replaceAll("/+$", "") + "/" + properties.bucket() + "/" + fileId;
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket(properties.bucket()).key(fileId).build();
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder().signatureDuration(Duration.ofMinutes(
+                properties.effectivePresignedUrlTtlMinutes())).getObjectRequest(getObjectRequest).build();
+
+        return s3Presigner.presignGetObject(presignRequest).url().toString();
+    }
+
+    private String createFloorPlanFileId(Long floorId, String contentType) {
+        return "floor-plans/%d/%s.%s".formatted(floorId, UUID.randomUUID(), extensionFor(contentType));
     }
 
     private void validateImage(MultipartFile file) {

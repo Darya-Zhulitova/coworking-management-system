@@ -18,7 +18,7 @@ public class FloorMapper {
                 .name(floor.getName())
                 .index(floor.getIndex())
                 .imageFileId(floor.getImageFileId())
-                .imageUrl(fileStorageService.publicUrl(floor.getImageFileId()))
+                .imageUrl(fileStorageService.presignedUrl(floor.getImageFileId()))
                 .active(floor.getActive())
                 .archived(floor.getArchived())
                 .archivedAt(floor.getArchivedAt())

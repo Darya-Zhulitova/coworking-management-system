@@ -9,6 +9,10 @@ public record FileStorageProperties(
         String accessKey,
         String secretKey,
         String bucket,
-        String region
+        String region,
+        Integer presignedUrlTtlMinutes
 ) {
+    public int effectivePresignedUrlTtlMinutes() {
+        return presignedUrlTtlMinutes == null || presignedUrlTtlMinutes <= 0 ? 60 : presignedUrlTtlMinutes;
+    }
 }
