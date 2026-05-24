@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useToast } from '@/components/ui/toast-provider';
 
 interface AuthPageProps {
   mode: 'login' | 'register';
@@ -21,6 +22,8 @@ interface RegisterFormState extends LoginFormState {
 export function AuthPage({ mode }: AuthPageProps) {
   const isLogin = mode === 'login';
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const toast = useToast();
   const [loginState, setLoginState] = useState<LoginFormState>({ email: '', password: '' });
   const [registerState, setRegisterState] = useState<RegisterFormState>({
     name: '',
@@ -29,14 +32,12 @@ export function AuthPage({ mode }: AuthPageProps) {
     password: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
-    setErrorMessage(null);
 
-    const path = isLogin ? '/api/auth/login' : '/api/auth/register';
+    const path = isLogin ? '/api/user/login' : '/api/user/register';
     const payload = isLogin ? loginState : registerState;
 
     try {
@@ -49,10 +50,11 @@ export function AuthPage({ mode }: AuthPageProps) {
       if (!response.ok) {
         throw new Error(data?.message || (isLogin ? 'Не удалось войти в систему.' : 'Не удалось создать аккаунт.'));
       }
-      router.replace('/');
+      const nextUrl = searchParams.get('next');
+      router.replace(nextUrl && nextUrl.startsWith('/') ? nextUrl : '/');
       router.refresh();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : (isLogin ? 'Не удалось войти в систему.' : 'Не удалось создать аккаунт.'));
+      toast.error(error instanceof Error ? error.message : (isLogin ? 'Не удалось войти в систему.' : 'Не удалось создать аккаунт.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -67,7 +69,7 @@ export function AuthPage({ mode }: AuthPageProps) {
               <h1 className="h3 mb-2">{isLogin ? 'Вход' : 'Регистрация'}</h1>
               <p className="text-body-secondary mb-0">
                 {isLogin
-                  ? 'Войдите, чтобы работать с коворкингами, бронированиями и заявками.'
+                  ? 'Войдите, чтобы работать с коворкингами, бронированиями и сервисными заявками.'
                   : 'Создайте аккаунт, чтобы подключаться к коворкингам и управлять своими услугами.'}
               </p>
             </div>
@@ -132,7 +134,6 @@ export function AuthPage({ mode }: AuthPageProps) {
                 />
               </div>
 
-              {errorMessage ? <div className="alert alert-danger mb-0">{errorMessage}</div> : null}
 
               <button type="submit" className="btn btn-primary btn-lg" disabled={isSubmitting}>
                 {isSubmitting ? (isLogin ? 'Выполняется вход...' : 'Создаем аккаунт...') : (isLogin ? 'Войти' : 'Создать аккаунт')}
@@ -142,11 +143,13 @@ export function AuthPage({ mode }: AuthPageProps) {
             <div className="mt-4 text-body-secondary small">
               {isLogin ? (
                 <>
-                  Нет аккаунта? <Link href="/register">Зарегистрироваться</Link>
+                  Нет аккаунта? <Link
+                  href={searchParams.get('next') ? `/register?next=${encodeURIComponent(searchParams.get('next') ?? '')}` : '/register'}>Зарегистрироваться</Link>
                 </>
               ) : (
                 <>
-                  Уже есть аккаунт? <Link href="/login">Войти</Link>
+                  Уже есть аккаунт? <Link
+                  href={searchParams.get('next') ? `/login?next=${encodeURIComponent(searchParams.get('next') ?? '')}` : '/login'}>Войти</Link>
                 </>
               )}
             </div>

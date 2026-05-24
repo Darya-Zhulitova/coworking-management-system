@@ -6,7 +6,7 @@ import { requestJson } from '@/lib/client/api';
 import type { CoworkingShellContext, UserProfile } from '@/lib/types';
 
 type ShellContextValue = {
-  coworkingId: number | null;
+  membershipId: number | null;
   context: CoworkingShellContext | null;
   profile: UserProfile | null;
   loading: boolean;
@@ -15,8 +15,8 @@ type ShellContextValue = {
 
 const ShellContext = createContext<ShellContextValue | null>(null);
 
-function extractCoworkingId(pathname: string): number | null {
-  const match = pathname.match(/^\/coworkings\/(\d+)/);
+function extractMembershipId(pathname: string): number | null {
+  const match = pathname.match(/^\/memberships\/(\d+)/);
   if (!match) return null;
   const parsed = Number(match[1]);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
@@ -32,7 +32,7 @@ export function useCoworkingShellContext(): ShellContextValue {
 
 export function CoworkingShellProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const coworkingId = useMemo(() => extractCoworkingId(pathname), [pathname]);
+  const membershipId = useMemo(() => extractMembershipId(pathname), [pathname]);
   const [context, setContext] = useState<CoworkingShellContext | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,15 +47,15 @@ export function CoworkingShellProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     try {
-      if (coworkingId) {
-        const data = await requestJson<CoworkingShellContext>(`/api/coworkings/${coworkingId}/me/context`);
+      if (membershipId) {
+        const data = await requestJson<CoworkingShellContext>(`/api/memberships/${membershipId}/context`);
         setContext(data);
         setProfile(data.user);
         return;
       }
 
       setContext(null);
-      const data = await requestJson<UserProfile>('/api/users/me');
+      const data = await requestJson<UserProfile>('/api/user/me');
       setProfile(data);
     } catch {
       setContext(null);
@@ -63,7 +63,7 @@ export function CoworkingShellProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [coworkingId, pathname]);
+  }, [membershipId, pathname]);
 
   useEffect(() => {
     void refreshContext();
@@ -81,12 +81,12 @@ export function CoworkingShellProvider({ children }: { children: ReactNode }) {
   }, [refreshContext]);
 
   const value = useMemo<ShellContextValue>(() => ({
-    coworkingId,
+    membershipId,
     context,
     profile,
     loading,
     refreshContext,
-  }), [context, coworkingId, loading, profile, refreshContext]);
+  }), [context, membershipId, loading, profile, refreshContext]);
 
   return <ShellContext.Provider value={value}>{children}</ShellContext.Provider>;
 }

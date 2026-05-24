@@ -4,19 +4,20 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { requestJson } from '@/lib/client/api';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { LoadingOverlay } from '@/components/ui/loading-overlay';
+import { useToast } from '@/components/ui/toast-provider';
 import { notifyCoworkingContextChanged } from '@/components/layout/coworking-shell-context';
 import type { LedgerEntry, MembershipStatus, PayRequest } from '@/lib/types';
 
 type BalanceDetails = {
   membershipId: number;
-  coworkingId: number;
   membershipStatus: MembershipStatus;
   balanceMinorUnits: number;
   ledger: LedgerEntry[];
   payRequests: Array<PayRequest & { adminComment?: string | null }>;
 };
 
-type LedgerFilter = 'all' | 'money' | 'booking' | 'compensation';
+type LedgerFilter = 'all' | 'money' | 'booking' | 'compensation' | 'manual' | 'service';
 type RequestDirection = 'deposit' | 'withdrawal';
 
 function normalizeMembershipStatus(status: string): MembershipStatus {
@@ -29,22 +30,29 @@ function normalizeMembershipStatus(status: string): MembershipStatus {
 
 function getLedgerFilterMatch(filter: LedgerFilter, entry: LedgerEntry): boolean {
   if (filter === 'all') return true;
-  if (filter === 'money') return entry.type === 'DEPOSIT' || entry.type === 'WITHDRAWAL';
+  if (filter === 'money') return entry.type === 'BALANCE_TOP_UP' || entry.type === 'BALANCE_WITHDRAWAL';
   if (filter === 'booking') return entry.type === 'BOOKING_CHARGE';
-  return entry.type === 'CANCELLATION_REFUND'
-    || entry.type === 'DAY_CLOSURE_COMPENSATION'
-    || entry.type === 'MEMBERSHIP_BLOCK_COMPENSATION';
+  if (filter === 'compensation') {
+    return entry.type === 'BOOKING_USER_CANCELLATION_REFUND'
+      || entry.type === 'BOOKING_ADMIN_CANCELLATION_COMPENSATION';
+  }
+  if (filter === 'manual') return entry.type === 'MANUAL_CREDIT' || entry.type === 'MANUAL_DEBIT';
+  return entry.type === 'SERVICE_REQUEST_CHARGE';
 }
 
-export function BalancePage({ coworkingId }: { coworkingId: number }) {
-  const [data, setData] = useState<BalanceDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function BalancePage({ membershipId, initialData, initialError = null }: {
+  membershipId: number;
+  initialData: BalanceDetails | null;
+  initialError?: string | null
+}) {
+  const toast = useToast();
+  const [data, setData] = useState<BalanceDetails | null>(initialData);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(initialError);
   const [ledgerFilter, setLedgerFilter] = useState<LedgerFilter>('all');
   const [direction, setDirection] = useState<RequestDirection>('deposit');
   const [amountRubles, setAmountRubles] = useState('');
   const [comment, setComment] = useState('');
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadData = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
@@ -56,7 +64,7 @@ export function BalancePage({ coworkingId }: { coworkingId: number }) {
     try {
       const response = await requestJson<Omit<BalanceDetails, 'membershipStatus'> & {
         membershipStatus: string
-      }>(`/api/coworkings/${coworkingId}/balance`);
+      }>(`/api/memberships/${membershipId}/balance`);
       setData({ ...response, membershipStatus: normalizeMembershipStatus(response.membershipStatus) });
       setError(null);
     } catch (loadError) {
@@ -68,11 +76,9 @@ export function BalancePage({ coworkingId }: { coworkingId: number }) {
         setIsLoading(false);
       }
     }
-  }, [coworkingId]);
+  }, [membershipId]);
 
   useEffect(() => {
-    void loadData();
-
     const refreshIntervalId = window.setInterval(() => {
       void loadData({ silent: true });
     }, 5000);
@@ -82,51 +88,50 @@ export function BalancePage({ coworkingId }: { coworkingId: number }) {
     };
   }, [loadData]);
   const filteredLedger = useMemo(() => (data?.ledger ?? []).filter((entry) => getLedgerFilterMatch(ledgerFilter, entry)), [data?.ledger, ledgerFilter]);
-  const actionsLocked = data?.membershipStatus === 'pending';
   const canCreateDeposit = data?.membershipStatus === 'active';
   const canCreateWithdrawal = data?.membershipStatus === 'active' || data?.membershipStatus === 'blocked';
   const canSubmitCurrentRequest = direction === 'deposit' ? canCreateDeposit : canCreateWithdrawal;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitError(null);
-
     const parsedAmount = Number(amountRubles.replace(',', '.'));
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      setSubmitError('Введите положительную сумму.');
+      toast.warning('Введите положительную сумму.');
       return;
     }
 
     const amountMinorUnits = Math.round(parsedAmount * 100) * (direction === 'withdrawal' ? -1 : 1);
     if (!comment.trim()) {
-      setSubmitError('Добавьте комментарий к запросу.');
+      toast.warning('Добавьте комментарий к запросу.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await requestJson<{ id: number }>('/api/pay-requests', {
+      await requestJson<{ id: number }>(`/api/memberships/${membershipId}/pay-requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coworkingId, amount: amountMinorUnits, userComment: comment.trim() }),
+        body: JSON.stringify({ amount: amountMinorUnits, userComment: comment.trim() }),
       });
       setAmountRubles('');
       setComment('');
       await loadData();
       notifyCoworkingContextChanged();
+      toast.success('Платежная заявка создана.');
     } catch (submitRequestError) {
-      setSubmitError(submitRequestError instanceof Error ? submitRequestError.message : 'Не удалось создать финансовый запрос.');
+      toast.error(submitRequestError instanceof Error ? submitRequestError.message : 'Не удалось создать платежную заявку.');
     } finally {
       setIsSubmitting(false);
     }
   }
 
   if (isLoading) {
-    return <div className="alert alert-light border">Загрузка данных баланса…</div>;
+    return <LoadingOverlay message="Загрузка данных..." ariaLabel="Загрузка данных"/>;
   }
 
   if (error || !data) {
-    return <div className="alert alert-danger">{error ?? 'Не удалось загрузить данные баланса.'}</div>;
+    return <div
+      className="border rounded-4 border-danger-subtle bg-danger-subtle text-danger-emphasis p-3">{error ?? 'Не удалось загрузить данные баланса.'}</div>;
   }
 
   return (
@@ -154,6 +159,8 @@ export function BalancePage({ coworkingId }: { coworkingId: number }) {
                   <option value="money">Пополнения и вывод</option>
                   <option value="booking">Бронирования</option>
                   <option value="compensation">Компенсации и возвраты</option>
+                  <option value="manual">Ручные корректировки</option>
+                  <option value="service">Сервисные заявки</option>
                 </select>
               </div>
               <div className="table-responsive">
@@ -196,7 +203,7 @@ export function BalancePage({ coworkingId }: { coworkingId: number }) {
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body p-4 d-grid gap-4">
               <div>
-                <h2 className="h5 mb-3">Новый финансовый запрос</h2>
+                <h2 className="h5 mb-3">Новая платежная заявка</h2>
                 <form className="d-grid gap-3" onSubmit={handleSubmit}>
                   <div className="btn-group" role="group" aria-label="Тип операции">
                     <button type="button"
@@ -228,12 +235,11 @@ export function BalancePage({ coworkingId }: { coworkingId: number }) {
                       <div className="small text-body-secondary">Пополнение счета недоступно.</div>}
                   {!canSubmitCurrentRequest && direction === 'withdrawal' &&
                       <div className="small text-body-secondary">Списание со счета недоступно.</div>}
-                  {submitError && <div className="alert alert-danger py-2 mb-0">{submitError}</div>}
                 </form>
               </div>
 
               <div>
-                <h2 className="h5 mb-3">Мои финансовые запросы</h2>
+                <h2 className="h5 mb-3">Мои платежные заявки</h2>
                 <div className="d-grid gap-3">
                   {data.payRequests.length > 0 ? data.payRequests.map((request) => (
                     <div className="border rounded-4 p-3" key={request.id}>
@@ -246,7 +252,7 @@ export function BalancePage({ coworkingId }: { coworkingId: number }) {
                       {request.adminComment ? <div className="small text-body-secondary mt-2">Комментарий
                         администратора: {request.adminComment}</div> : null}
                     </div>
-                  )) : <div className="text-body-secondary small">Финансовых запросов пока нет.</div>}
+                  )) : <div className="text-body-secondary small">Платежных заявок пока нет.</div>}
                 </div>
               </div>
             </div>

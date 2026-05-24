@@ -1,12 +1,13 @@
 export type MembershipStatus = 'active' | 'pending' | 'blocked';
 export type BookingPersistedStatus = 'ACTUAL' | 'CANCELED_ADMIN' | 'CANCELED_USER';
 export type LedgerType =
-  | 'DEPOSIT'
-  | 'WITHDRAWAL'
+  | 'BALANCE_TOP_UP'
+  | 'BALANCE_WITHDRAWAL'
   | 'BOOKING_CHARGE'
-  | 'CANCELLATION_REFUND'
-  | 'DAY_CLOSURE_COMPENSATION'
-  | 'MEMBERSHIP_BLOCK_COMPENSATION'
+  | 'BOOKING_USER_CANCELLATION_REFUND'
+  | 'BOOKING_ADMIN_CANCELLATION_COMPENSATION'
+  | 'MANUAL_CREDIT'
+  | 'MANUAL_DEBIT'
   | 'SERVICE_REQUEST_CHARGE';
 export type PayRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type ServiceRequestStatus = 'new' | 'in_progress' | 'resolved' | 'rejected';
@@ -21,7 +22,6 @@ export type UserProfile = {
 
 export type MembershipSummary = {
   id: number;
-  coworkingId: number;
   coworkingName: string;
   status: MembershipStatus;
   scheduleLabel: string;
@@ -31,15 +31,16 @@ export type MembershipSummary = {
 
 export type Booking = {
   id: number;
-  coworkingId: number;
+  bookingNumber?: string;
   placeId?: number;
   requestId: string;
   placeName: string;
+  placePreviewImageUrl?: string | null;
+  placeFullImageUrl?: string | null;
   date: string;
   cost: number;
   active: boolean;
   status: BookingPersistedStatus;
-  tariffId?: number;
   pricePerDay?: number;
   fullRefundHoursBefore: number;
   lateCancellationRefundPercent: number;
@@ -48,7 +49,6 @@ export type Booking = {
 
 export type LedgerEntry = {
   id: number;
-  coworkingId: number;
   timestamp: string;
   type: LedgerType;
   name: string;
@@ -58,16 +58,15 @@ export type LedgerEntry = {
 
 export type PayRequest = {
   id: number;
-  coworkingId: number;
   amount: number;
   status: PayRequestStatus;
   userComment: string;
   createdAt: string;
+  adminComment?: string | null;
 };
 
 export type ServiceRequest = {
   id: number;
-  coworkingId: number;
   membershipId?: number;
   typeId?: number;
   name: string;
@@ -84,48 +83,65 @@ export type BookingCartItem = {
   date: string;
 };
 
+export type BookingInitFloor = {
+  id: number;
+  name: string;
+  index?: number | null;
+  imageFileId?: string | null;
+  imageUrl?: string | null;
+  active: boolean;
+};
+
 export type BookingInitPlace = {
   id: number;
   name: string;
+  floorId?: number;
   floorName: string;
+  placeTypeId?: number;
   placeTypeName: string;
-  tariffId: number;
   pricePerDay: number;
   amenities: string[];
+  locX?: number | null;
+  locY?: number | null;
+  imageFileId?: string | null;
+  imageUrl?: string | null;
+  previewImageUrl?: string | null;
+  fullImageUrl?: string | null;
   active: boolean;
-  previewAvailable: boolean;
+  available: boolean;
+};
+
+export type PlaceAvailabilityDay = {
+  date: string;
+  available: boolean;
 };
 
 export type BookingInitData = {
-  coworkingId: number;
   coworkingName: string;
   membershipId: number;
   membershipStatus: MembershipStatus;
   balanceMinorUnits: number;
   previewDate: string;
+  floorMapEnabled: boolean;
+  floors: BookingInitFloor[];
   places: BookingInitPlace[];
 };
 
 export type CartCalculatedItem = {
   placeId: number;
   placeName: string;
+  placePreviewImageUrl?: string | null;
+  placeFullImageUrl?: string | null;
   date: string;
   floor: string;
   typeName: string;
-  tariffId: number;
-  basePrice: number;
-  discountPercent: number;
-  discountAmount: number;
   finalPrice: number;
   available: boolean;
 };
 
 export type CartCalculationSummary = {
-  totalBasePrice: number;
-  totalDiscount: number;
   totalFinalPrice: number;
   unavailableCount: number;
-  discountHints: string[];
   validationErrors: string[];
   hasEnoughBalance: boolean;
   balanceAfterMinorUnits: number;
@@ -133,13 +149,12 @@ export type CartCalculationSummary = {
 };
 
 export type CartCalculation = {
-  coworkingId: number;
   items: CartCalculatedItem[];
   summary: CartCalculationSummary;
 };
 
 export type CheckoutResult = {
-  coworkingId: number;
+  membershipId: number;
   requestId: string;
   totalChargedMinorUnits: number;
   balanceAfterMinorUnits: number;
@@ -147,7 +162,6 @@ export type CheckoutResult = {
 };
 
 export type UserCoworkingDetails = {
-  id: number;
   name: string;
   description: string;
   address: string;
@@ -169,4 +183,24 @@ export type CoworkingShellContext = {
     status: MembershipStatus | null;
     balanceMinorUnits: number;
   };
+};
+
+export type JoinCoworkingPreview = {
+  coworkingId: number;
+  name: string;
+  description: string;
+  address: string;
+  workingHoursLabel: string;
+  heroTitle?: string | null;
+  heroText?: string | null;
+  imageUrls: string[];
+  autoApproveMembership: boolean;
+  active: boolean;
+};
+
+export type JoinCoworkingResult = {
+  membershipId: number;
+  coworkingId: number;
+  status: MembershipStatus;
+  existingMembership: boolean;
 };

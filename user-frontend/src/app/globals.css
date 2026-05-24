@@ -17,3 +17,280 @@ a {
   padding-bottom: 0;
 }
 
+
+.floor-map {
+  min-height: 360px;
+  aspect-ratio: 16 / 10;
+}
+
+.floor-map__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--bs-body-bg);
+}
+
+.floor-map__placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  background-image: linear-gradient(rgba(108, 117, 125, 0.14) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(108, 117, 125, 0.14) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.floor-map__marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.45rem;
+  border: 2px solid var(--bs-body-bg);
+  border-radius: 999px;
+  box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.18);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bs-white);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.floor-map__marker:not(:disabled):hover,
+.floor-map__marker:not(:disabled):focus-visible {
+  transform: translate(-50%, -50%) scale(1.12);
+  box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.24);
+  z-index: 3;
+}
+
+.floor-map__marker:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.floor-map__marker--available,
+.floor-map-legend--available {
+  background: var(--bs-success);
+}
+
+.floor-map__marker--busy,
+.floor-map-legend--busy {
+  background: var(--bs-secondary);
+}
+
+.floor-map__marker--selected,
+.floor-map-legend--selected {
+  background: var(--bs-primary);
+}
+
+.floor-map-legend {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-right: 0.25rem;
+  border-radius: 999px;
+  vertical-align: -0.1rem;
+}
+
+.floor-map__marker--in-cart {
+  outline: 3px solid var(--bs-warning);
+  outline-offset: 2px;
+}
+
+.availability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.1rem, 1fr));
+  gap: 0.35rem;
+}
+
+.availability-grid__day {
+  min-height: 2rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.availability-grid__day--available {
+  border-color: var(--bs-success);
+}
+
+.availability-grid__day--busy {
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-secondary-color);
+  cursor: not-allowed;
+}
+
+.availability-grid__day--selected {
+  background: var(--bs-primary);
+  border-color: var(--bs-primary);
+  color: var(--bs-white);
+}
+
+.booking-place-visual {
+  width: min(100%, 26rem);
+  min-height: 16rem;
+  aspect-ratio: 4 / 3;
+}
+
+.booking-place-visual__image,
+.booking-place-visual__placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.booking-compact-filters .form-select,
+.booking-compact-filters .form-control {
+  width: auto;
+  min-width: 9rem;
+}
+
+.booking-cart-card {
+  top: 1rem;
+}
+
+.floor-map-legend--in-cart {
+  background: var(--bs-warning);
+}
+
+.availability-grid__day {
+  cursor: pointer;
+}
+
+.availability-grid__day--in-cart {
+  background: var(--bs-warning-bg-subtle);
+  border-color: var(--bs-warning);
+  color: var(--bs-warning-text-emphasis);
+}
+
+.booking-place-visual__marker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 3px solid var(--bs-white);
+  border-radius: 999px;
+  background: var(--bs-primary);
+  box-shadow: 0 0.25rem 0.8rem rgba(0, 0, 0, 0.35);
+  transform: translate(-50%, -50%);
+}
+
+.booking-calendar__weekdays,
+.booking-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.booking-calendar__weekdays {
+  margin-bottom: 0.35rem;
+  color: var(--bs-secondary-color);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.booking-calendar__day,
+.booking-calendar__empty {
+  min-height: 2.2rem;
+  border-radius: 0.65rem;
+}
+
+.booking-calendar__day {
+  border: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.booking-calendar__day--available {
+  border-color: var(--bs-success);
+}
+
+.booking-calendar__day--busy {
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-secondary-color);
+}
+
+.booking-calendar__day--in-cart {
+  background: var(--bs-warning-bg-subtle);
+  border-color: var(--bs-warning);
+  color: var(--bs-warning-text-emphasis);
+}
+
+.booking-calendar__day--selected {
+  background: var(--bs-primary);
+  border-color: var(--bs-primary);
+  color: var(--bs-white);
+}
+
+
+.booking-place-visual__image {
+  display: block;
+}
+
+.booking-place-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+
+.booking-place-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 1rem;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  box-shadow: 0 0.35rem 1rem rgba(15, 23, 42, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.booking-place-card:hover,
+.booking-place-card:focus-visible {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0.65rem 1.4rem rgba(15, 23, 42, 0.1);
+  transform: translateY(-1px);
+}
+
+.booking-place-card--selected {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.18rem rgba(var(--bs-primary-rgb), 0.18);
+}
+
+.booking-place-card__image-wrap {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: var(--bs-tertiary-bg);
+}
+
+.booking-place-card__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.booking-place-card__body {
+  display: block;
+  padding: 1rem;
+}
+
+.app-header {
+  z-index: 1030;
+}
+
+.booking-cart-card {
+  top: calc(72px + 1rem);
+  z-index: 1010;
+}

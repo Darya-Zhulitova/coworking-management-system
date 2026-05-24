@@ -6,7 +6,7 @@ public record CoworkingUserReadModelDto(
         Long userId,
         String name,
         LocalDate registeredAt,
-        Integer balance,
+        Long balance,
         Integer totalBookings,
         Integer unfinishedBookings
 ) {

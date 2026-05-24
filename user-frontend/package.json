@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run sass:build && next build",
     "start": "next start",
     "lint": "eslint",
     "sass:build": "sass ./scss/custom.scss ./public/css/custom.css",

@@ -11,8 +11,8 @@ public record UserAnalyticsDto(
         Integer activeBookings,
         Integer unfinishedServiceRequests,
         Integer openPayRequests,
-        Integer totalBalance,
-        Integer monthlyIncome,
+        Long totalBalance,
+        Long monthlyIncome,
         Integer monthlyOccupancyPercent,
         List<AnalyticsMetricPointDto> monthlyIncomeHistory,
         List<AnalyticsMetricPointDto> occupancyHistory

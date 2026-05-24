@@ -9,7 +9,7 @@ public record ServiceRequestQueueItemDto(
         String userName,
         String typeName,
         String name,
-        Integer cost,
+        Long cost,
         String status,
         LocalDate createdAt
 ) {

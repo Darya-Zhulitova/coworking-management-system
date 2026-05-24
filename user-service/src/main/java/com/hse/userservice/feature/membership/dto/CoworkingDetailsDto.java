@@ -1,0 +1,18 @@
+package com.hse.userservice.feature.membership.dto;
+
+import java.util.List;
+
+public record CoworkingDetailsDto(
+        String name,
+        String description,
+        String address,
+        String workingHoursLabel,
+        String heroTitle,
+        String heroText,
+        List<String> imageUrls,
+        Boolean active,
+        Long membershipId,
+        String membershipStatus,
+        Long balanceMinorUnits
+) {
+}

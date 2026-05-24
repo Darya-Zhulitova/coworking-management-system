@@ -1,6 +1,6 @@
 package com.hse.userservice.common.security;
 
-import com.hse.userservice.repository.UserRepository;
+import com.hse.userservice.feature.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -26,6 +26,6 @@ public class UserPrincipalDetailsService implements UserDetailsService {
                         true,
                         List.of()
                 ))
-                .orElseThrow(() -> new UsernameNotFoundException("User not found."));
+                .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден."));
     }
 }

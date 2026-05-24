@@ -3,6 +3,8 @@
 import { ReactNode, useEffect } from 'react';
 import { AppHeader } from '@/components/layout/app-header';
 import { CoworkingShellProvider } from '@/components/layout/coworking-shell-context';
+import { NavigationLoadingProvider } from '@/components/ui/navigation-loading-provider';
+import { ToastProvider } from '@/components/ui/toast-provider';
 
 export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
@@ -10,11 +12,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <CoworkingShellProvider>
-      <div className="bg-body-tertiary min-vh-100">
-        <AppHeader/>
-        <main className="container py-4 py-lg-5 app-main-shell">{children}</main>
-      </div>
-    </CoworkingShellProvider>
+    <ToastProvider>
+      <CoworkingShellProvider>
+        <NavigationLoadingProvider>
+          <div className="bg-body-tertiary min-vh-100">
+            <AppHeader/>
+            <main className="container py-4 py-lg-5 app-main-shell">{children}</main>
+          </div>
+        </NavigationLoadingProvider>
+      </CoworkingShellProvider>
+    </ToastProvider>
   );
 }
