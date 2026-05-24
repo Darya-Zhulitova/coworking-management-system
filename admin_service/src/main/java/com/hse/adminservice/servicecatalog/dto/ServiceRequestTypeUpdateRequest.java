@@ -12,7 +12,7 @@ public class ServiceRequestTypeUpdateRequest {
 
     @NotNull
     @Min(0)
-    private Integer cost;
+    private Long cost;
 
     private Boolean active;
 }

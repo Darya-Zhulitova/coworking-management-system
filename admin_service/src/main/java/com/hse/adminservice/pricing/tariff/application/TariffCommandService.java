@@ -6,7 +6,6 @@ import com.hse.adminservice.common.time.TimeProvider;
 import com.hse.adminservice.coworking.application.CoworkingConfigurationVersionService;
 import com.hse.adminservice.coworking.domain.Coworking;
 import com.hse.adminservice.coworking.persistence.CoworkingRepository;
-import com.hse.adminservice.pricing.discount.TariffDiscountRuleFactory;
 import com.hse.adminservice.pricing.tariff.domain.Tariff;
 import com.hse.adminservice.pricing.tariff.dto.TariffCreateRequest;
 import com.hse.adminservice.pricing.tariff.dto.TariffResponse;
@@ -36,34 +35,30 @@ public class TariffCommandService {
     private final CoworkingConfigurationVersionService configurationVersionService;
     private final TariffPayloadValidator tariffPayloadValidator;
     private final CoefficientNormalizer coefficientNormalizer;
-    private final TariffDiscountRuleFactory discountRuleFactory;
     private final TimeProvider timeProvider;
 
     @Transactional
     public TariffResponse create(Long coworkingId, TariffCreateRequest request) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.TARIFF_EDIT);
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
         String normalizedName = request.getName().trim();
         if (tariffRepository.existsByCoworkingIdAndNameIgnoreCaseAndArchivedFalse(coworkingId, normalizedName)) {
-            throw new ConflictException("Tariff name must be unique within coworking");
+            throw new ConflictException("Название тарифа должно быть уникальным в рамках коворкинга");
         }
         tariffPayloadValidator.validate(
                 request.getPricePerDay(),
-                request.getMinBookingDays(),
                 request.getFullRefundHoursBefore(),
                 request.getLateCancellationRefundPercent(),
                 request.getCancellationCompensationCoefficient(),
                 request.getDayClosureCompensationCoefficient(),
-                request.getMembershipBlockCompensationCoefficient(),
-                request.getDiscountRules()
+                request.getMembershipBlockCompensationCoefficient()
         );
         LocalDateTime now = timeProvider.now();
         Tariff tariff = Tariff.builder()
                 .coworking(coworking)
                 .name(normalizedName)
                 .pricePerDay(request.getPricePerDay())
-                .minBookingDays(request.getMinBookingDays())
                 .fullRefundHoursBefore(request.getFullRefundHoursBefore())
                 .lateCancellationRefundPercent(request.getLateCancellationRefundPercent())
                 .cancellationCompensationCoefficient(coefficientNormalizer.normalize(request.getCancellationCompensationCoefficient()))
@@ -75,7 +70,6 @@ public class TariffCommandService {
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
-        tariff.setDiscountRules(discountRuleFactory.build(tariff, request.getDiscountRules()));
         Tariff saved = tariffRepository.save(tariff);
         configurationVersionService.bumpVersion(coworkingId);
         return tariffMapper.toResponse(saved);
@@ -90,28 +84,23 @@ public class TariffCommandService {
                 .equalsIgnoreCase(normalizedName) && tariffRepository.existsByCoworkingIdAndNameIgnoreCaseAndArchivedFalse(coworkingId,
                 normalizedName
         )) {
-            throw new ConflictException("Tariff name must be unique within coworking");
+            throw new ConflictException("Название тарифа должно быть уникальным в рамках коворкинга");
         }
         tariffPayloadValidator.validate(
                 request.getPricePerDay(),
-                request.getMinBookingDays(),
                 request.getFullRefundHoursBefore(),
                 request.getLateCancellationRefundPercent(),
                 request.getCancellationCompensationCoefficient(),
                 request.getDayClosureCompensationCoefficient(),
-                request.getMembershipBlockCompensationCoefficient(),
-                request.getDiscountRules()
+                request.getMembershipBlockCompensationCoefficient()
         );
         tariff.setName(normalizedName);
         tariff.setPricePerDay(request.getPricePerDay());
-        tariff.setMinBookingDays(request.getMinBookingDays());
         tariff.setFullRefundHoursBefore(request.getFullRefundHoursBefore());
         tariff.setLateCancellationRefundPercent(request.getLateCancellationRefundPercent());
         tariff.setCancellationCompensationCoefficient(coefficientNormalizer.normalize(request.getCancellationCompensationCoefficient()));
         tariff.setDayClosureCompensationCoefficient(coefficientNormalizer.normalize(request.getDayClosureCompensationCoefficient()));
         tariff.setMembershipBlockCompensationCoefficient(coefficientNormalizer.normalize(request.getMembershipBlockCompensationCoefficient()));
-        tariff.getDiscountRules().clear();
-        tariff.getDiscountRules().addAll(discountRuleFactory.build(tariff, request.getDiscountRules()));
         if (request.getActive() != null) {
             tariff.setActive(request.getActive());
         }
@@ -130,7 +119,7 @@ public class TariffCommandService {
                 .stream()
                 .anyMatch(placeType -> placeType.getTariff().getId().equals(tariffId));
         if (used) {
-            throw new ConflictException("Cannot archive tariff while place types still reference it");
+            throw new ConflictException("Нельзя архивировать тариф, пока он используется типами мест");
         }
         LocalDateTime now = timeProvider.now();
         tariff.setArchived(true);
@@ -144,6 +133,6 @@ public class TariffCommandService {
 
     private Tariff getExistingTariff(Long coworkingId, Long tariffId) {
         return tariffRepository.findByIdAndCoworkingIdAndArchivedFalse(tariffId, coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tariff not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Тариф не найден"));
     }
 }

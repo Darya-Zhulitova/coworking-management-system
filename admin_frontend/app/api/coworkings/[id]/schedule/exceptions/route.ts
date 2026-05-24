@@ -13,28 +13,28 @@ function parseId(value: string): number | null {
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getAdminSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  if (!session) return NextResponse.json({ message: 'Необходимо войти в систему.' }, { status: 401 });
   const coworkingId = parseId((await params).id);
-  if (coworkingId == null) return NextResponse.json({ message: 'Invalid coworking id.' }, { status: 400 });
+  if (coworkingId == null) return NextResponse.json({ message: 'Некорректный идентификатор коворкинга.' }, { status: 400 });
   try {
     return NextResponse.json(await getCoworkingScheduleExceptions(session.token, coworkingId));
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    return NextResponse.json({ message: 'Unable to load schedule exceptions.' }, { status: 500 });
+    return NextResponse.json({ message: 'Не удалось загрузить исключения расписания.' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getAdminSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  if (!session) return NextResponse.json({ message: 'Необходимо войти в систему.' }, { status: 401 });
   const coworkingId = parseId((await params).id);
-  if (coworkingId == null) return NextResponse.json({ message: 'Invalid coworking id.' }, { status: 400 });
+  if (coworkingId == null) return NextResponse.json({ message: 'Некорректный идентификатор коворкинга.' }, { status: 400 });
   const payload = await request.json().catch(() => null) as {
     date?: string;
     type?: 'OPEN' | 'CLOSE';
     name?: string
   } | null;
-  if (!payload?.date || !payload?.type || !payload?.name) return NextResponse.json({ message: 'date, type and name are required.' }, { status: 400 });
+  if (!payload?.date || !payload?.type || !payload?.name) return NextResponse.json({ message: 'Укажите дату, тип и название.' }, { status: 400 });
   try {
     return NextResponse.json(await createCoworkingScheduleException(session.token, coworkingId, {
       date: payload.date,
@@ -43,6 +43,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }), { status: 201 });
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    return NextResponse.json({ message: 'Unable to create schedule exception.' }, { status: 500 });
+    return NextResponse.json({ message: 'Не удалось создать исключение расписания.' }, { status: 500 });
   }
 }

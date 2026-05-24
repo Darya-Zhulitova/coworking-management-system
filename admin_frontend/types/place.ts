@@ -1,21 +1,13 @@
-export interface TariffDiscountRuleDto {
-  id: number;
-  thresholdQuantity: number;
-  discountPercent: number;
-}
-
 export interface TariffDto {
   id: number;
   coworkingId: number;
   name: string;
   pricePerDay: number;
-  minBookingDays: number;
   fullRefundHoursBefore: number;
   lateCancellationRefundPercent: number;
   cancellationCompensationCoefficient: number;
   dayClosureCompensationCoefficient: number;
   membershipBlockCompensationCoefficient: number;
-  discountRules: TariffDiscountRuleDto[];
   version: number;
   active: boolean;
   archived: boolean;
@@ -63,6 +55,9 @@ export interface PlaceDto {
   updatedAt?: string;
   locX?: number | null;
   locY?: number | null;
+  imageFileId?: string | null;
+  previewImageUrl?: string | null;
+  fullImageUrl?: string | null;
   amenities?: string[];
   placeType: {
     id: number;
@@ -119,21 +114,14 @@ export interface UpdateFloorRequest extends CreateFloorRequest {
   active?: boolean;
 }
 
-export interface TariffDiscountRuleInput {
-  thresholdQuantity: number;
-  discountPercent: number;
-}
-
 export interface CreateTariffRequest {
   name: string;
   pricePerDay: number;
-  minBookingDays: number;
   fullRefundHoursBefore: number;
   lateCancellationRefundPercent: number;
   cancellationCompensationCoefficient?: number;
   dayClosureCompensationCoefficient?: number;
   membershipBlockCompensationCoefficient?: number;
-  discountRules?: TariffDiscountRuleInput[];
 }
 
 export interface UpdateTariffRequest extends CreateTariffRequest {
@@ -156,6 +144,8 @@ export interface CreatePlaceRequest {
   placeTypeId: number;
   locX?: number | null;
   locY?: number | null;
+  imageFileId?: string | null;
+  imageUrl?: string | null;
   amenities?: string[];
 }
 
@@ -163,6 +153,8 @@ export interface UpdatePlaceRequest {
   name: string;
   locX?: number | null;
   locY?: number | null;
+  imageFileId?: string | null;
+  imageUrl?: string | null;
   amenities?: string[];
   active?: boolean;
 }
@@ -181,79 +173,32 @@ export interface CreatePlaceClosingRequest {
 
 export interface AffectedBookingDto {
   bookingId: number;
-  status: string;
-  startAt: string;
-  endAt: string;
+  bookingNumber: string;
+  membershipId: number;
+  userId: number;
+  userName: string;
+  placeId: number;
+  placeName: string;
+  date: string;
   bookingAmount: number;
   compensationAmount: number;
-  user: { membershipId: number; userId: number; name: string };
-  place: { placeId: number; placeName: string; coworkingId: number; coworkingName: string };
 }
 
 export interface OperationalImpactDto {
-  operationType: string;
-  targetType: string;
-  targetId: number;
-  targetName: string;
-  simulatedAffectedFutureBookings: number;
-  plannedUserDomainCommands: string[];
+  affectedBookingsCount: number;
   affectedDates: string[];
   affectedBookings: AffectedBookingDto[];
   totalCompensationAmount: number;
-  mode: string;
-  summary: string;
+  impactHash: string;
 }
+
+export interface ImpactCommitRequest {
+  impactHash: string;
+}
+
+export type WithImpactHash<T extends object> = T & ImpactCommitRequest;
 
 export type PlaceDeactivationPreview = OperationalImpactDto;
-
-export interface CoworkingConfigSnapshot {
-  coworkingId: number;
-  configVersion: number;
-  generatedAt: string;
-  schedule: number;
-  name?: string;
-  description?: string;
-  address?: string;
-  workingHoursLabel?: string;
-  heroTitle?: string | null;
-  heroText?: string | null;
-  floors: Array<{
-    id: number;
-    name: string;
-    index: number;
-    imageFileId?: string | null;
-    imageUrl?: string | null;
-    active: boolean
-  }>;
-  tariffs: Array<{
-    id: number;
-    name: string;
-    pricePerDay: number;
-    minBookingDays: number;
-    fullRefundHoursBefore: number;
-    lateCancellationRefundPercent: number;
-    active: boolean;
-    cancellationCompensationCoefficient: number;
-    dayClosureCompensationCoefficient: number;
-    membershipBlockCompensationCoefficient: number;
-    discountRules: TariffDiscountRuleDto[];
-    version: number
-  }>;
-  placeTypes: Array<{ id: number; name: string; tariffId: number; active: boolean }>;
-  places: Array<{
-    id: number;
-    name: string;
-    floorId: number;
-    placeTypeId: number;
-    locX?: number | null;
-    locY?: number | null;
-    amenities?: string[];
-    active: boolean
-  }>;
-  scheduleExceptions: Array<{ id: number; date: string; type: string; name: string; active: boolean }>;
-  placeClosings: Array<{ id: number; placeId: number; date: string; name: string; active: boolean }>;
-  serviceRequestTypes: Array<{ id: number; name: string; cost: number; version: number; active: boolean }>;
-}
 
 export interface ServiceRequestTypeDto {
   id: number;
@@ -349,14 +294,48 @@ export interface ServiceRequestDetailDto {
   resolvedAt?: string | null;
 }
 
+export interface ServiceRequestAttachmentDto {
+  id: number;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  url: string;
+}
+
 export interface ServiceRequestMessageDto {
-  messageId: number;
-  serviceRequestId: number;
+  id: number;
   authorType: 'USER' | 'ADMIN' | 'SYSTEM';
   authorName: string;
-  text: string;
-  timestamp: string;
-  readAt?: string | null;
+  text?: string | null;
+  createdAt: string;
+  attachments: ServiceRequestAttachmentDto[];
+}
+
+export interface ServiceRequestWorkspaceDto {
+  request: ServiceRequestDetailDto;
+  messages: ServiceRequestMessageDto[];
+  availableActions: Array<'REPLY' | 'IN_PROGRESS' | 'RESOLVE' | 'REJECT'>;
+}
+
+export interface OperationsDashboardDto {
+  queues: {
+    pendingMemberships: number;
+    pendingPayRequests: number;
+    openServiceRequests: number;
+  };
+  memberships: {
+    total: number;
+    active: number;
+    pending: number;
+    blocked: number;
+  };
+  finance: {
+    totalBalance: number;
+    monthlyIncome: number;
+  };
+  occupancy: {
+    monthlyPercent: number;
+  };
 }
 
 export interface AnalyticsMetricPointDto {
@@ -382,6 +361,7 @@ export interface UserAnalyticsDto {
 
 export interface PlaceBookingAdminDto {
   bookingId: number;
+  bookingNumber: string;
   membershipId: number;
   userName: string;
   date: string;
@@ -393,7 +373,44 @@ export interface PlaceBookingAdminDto {
 export interface PlaceBookingListResponseDto {
   coworkingId: number;
   placeId: number;
-  source: 'user-service' | 'stub';
+  source: 'user-service';
   message?: string | null;
   bookings: PlaceBookingAdminDto[];
+}
+
+export interface MembershipListItemDto {
+  membershipId: number;
+  userId: number;
+  userName: string;
+  userEmail?: string | null;
+  status: 'ACTIVE' | 'PENDING' | 'BLOCKED' | string;
+  createdAt: string;
+  approvedAt?: string | null;
+  blockedAt?: string | null;
+  balanceMinorUnits: number;
+  activeBookingsCount: number;
+}
+
+export interface MembershipBookingDto {
+  bookingId: number;
+  bookingNumber: string;
+  placeId: number;
+  placeName: string;
+  date: string;
+  cost: number;
+  status: string;
+}
+
+export interface MembershipProfileDto {
+  membershipId: number;
+  userId: number;
+  userName: string;
+  userEmail?: string | null;
+  userDescription?: string | null;
+  status: 'ACTIVE' | 'PENDING' | 'BLOCKED' | string;
+  createdAt: string;
+  approvedAt?: string | null;
+  blockedAt?: string | null;
+  balanceMinorUnits: number;
+  activeBookings: MembershipBookingDto[];
 }

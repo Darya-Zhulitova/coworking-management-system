@@ -84,8 +84,8 @@ export function CoworkingUsersPageClient({ coworkingId }: { coworkingId: number 
 
   const cards: ManagementCard[] = [
     {
-      title: 'Список пользователей',
-      href: `/coworkings/${coworkingId}/users/list`,
+      title: 'Список пользователй',
+      href: `/coworkings/${coworkingId}/users/membership-list`,
       button: 'Открыть'
     },
     {
@@ -95,7 +95,7 @@ export function CoworkingUsersPageClient({ coworkingId }: { coworkingId: number 
       badgeCount: summary.pendingMemberships
     },
     {
-      title: 'Финансовые запросы',
+      title: 'Платежные заявки',
       href: `/coworkings/${coworkingId}/users/pay-requests`,
       button: 'Открыть',
       badgeCount: summary.pendingPayRequests
@@ -122,7 +122,7 @@ export function CoworkingUsersPageClient({ coworkingId }: { coworkingId: number 
         аналитика</Card.Title><Stack gap={2}>
         <div>Общий депозит пользователей: {formatRublesFromKopecks(analytics.totalBalance)}</div>
         <div>Доход за месяц: {formatRublesFromKopecks(analytics.monthlyIncome)}</div>
-        <div>Заполняемость: {analytics.monthlyOccupancyPercent}%</div>
+        <div>Заполненность на месяц: {analytics.monthlyOccupancyPercent}%</div>
         <div>Количество пользователей: {analytics.activeMemberships}</div>
         <div>Ожидают подтверждения: {analytics.pendingMemberships}</div>
       </Stack></Card.Body></Card></Col>

@@ -8,11 +8,11 @@ export async function POST(request: Request) {
   try {
     payload = (await request.json()) as AdminLoginRequest;
   } catch {
-    return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
+    return NextResponse.json({ message: 'Некорректное тело запроса.' }, { status: 400 });
   }
 
   if (!payload.email?.trim() || !payload.password) {
-    return NextResponse.json({ message: 'Email and password are required.' }, { status: 400 });
+    return NextResponse.json({ message: 'Укажите email и пароль.' }, { status: 400 });
   }
 
   try {
@@ -23,6 +23,6 @@ export async function POST(request: Request) {
     if (error instanceof BackendRequestError) {
       return NextResponse.json({ message: error.message }, { status: error.status || 500 });
     }
-    return NextResponse.json({ message: 'Unable to sign in.' }, { status: 500 });
+    return NextResponse.json({ message: 'Не удалось войти в систему.' }, { status: 500 });
   }
 }

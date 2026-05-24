@@ -14,6 +14,7 @@ public record PlaceCreateRequest(
         @NotNull Long placeTypeId,
         @DecimalMin("0.0") @DecimalMax("1.0") BigDecimal locX,
         @DecimalMin("0.0") @DecimalMax("1.0") BigDecimal locY,
+        String imageFileId,
         List<String> amenities
 ) {
 }

@@ -2,51 +2,61 @@ spring:
   application:
     name: admin-service
 
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:demo}
+
   datasource:
-    url: jdbc:h2:mem:admin-db
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: ${ADMIN_DB_URL}
+    driver-class-name: org.postgresql.Driver
+    username: ${ADMIN_DB_USERNAME}
+    password: ${ADMIN_DB_PASSWORD}
 
   jpa:
-    hibernate:
-      ddl-auto: update
     open-in-view: false
+    show-sql: ${ADMIN_JPA_SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: ${ADMIN_JPA_FORMAT_SQL:false}
+        jdbc:
+          time_zone: UTC
 
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+  servlet:
+    multipart:
+      max-file-size: 75MB
+      max-request-size: 75MB
 
-  profiles:
-    active: dev
+server:
+  port: ${ADMIN_SERVICE_PORT:8081}
+  servlet:
+    context-path: /
+  tomcat:
+    max-http-form-post-size: 75MB
+    max-swallow-size: 75MB
 
 app:
   jwt:
-    secret: 53A73E5F1CBE0A2E3B5F2D784E6A1B423D3F247X1F6E5C3A596D635A75327855
-    expiration: 86400000
+    secret: ${ADMIN_JWT_SECRET}
+    expiration: ${ADMIN_JWT_EXPIRATION_MS:86400000}
 
 integration:
   user-service:
-    base-url: http://localhost:8080/api
+    base-url: ${USER_SERVICE_BASE_URL}
+  user-frontend:
+    join-base-url: ${USER_FRONTEND_JOIN_BASE_URL}
   internal-api:
-    key: demo-internal-key
+    key: ${INTERNAL_API_KEY}
 
 storage:
   s3:
-    endpoint: http://127.0.0.1:9000
-    public-base-url: http://127.0.0.1:9000
-    access-key: rustfsadmin
-    secret-key: rustfsadmin
-    bucket: coworking-files
-    region: us-east-1
-    presigned-url-ttl-minutes: 60
-
-server:
-  port: 8081
+    endpoint: ${S3_ENDPOINT}
+    access-key: ${S3_ACCESS_KEY}
+    secret-key: ${S3_SECRET_KEY}
+    bucket: ${S3_BUCKET}
+    region: ${S3_REGION}
+    presigned-url-ttl-minutes: ${S3_PRESIGNED_URL_TTL_MINUTES:60}
 
 logging:
   level:
     root: INFO
-    com.hse.adminservice: DEBUG
-    org.hibernate.SQL: DEBUG
+    com.hse.adminservice: ${ADMIN_APP_LOG_LEVEL:INFO}
+    org.hibernate.SQL: ${ADMIN_SQL_LOG_LEVEL:WARN}

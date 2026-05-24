@@ -39,7 +39,7 @@ public class AdminAuthorizationService {
 
     public ResolvedAdminAccessContext resolveForCoworkingScope(Long coworkingId) {
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
 
         Long adminId = authenticatedAdminActorService.getSubjectId();
         if (adminId.equals(coworking.getOwnerId())) {
@@ -50,7 +50,7 @@ public class AdminAuthorizationService {
         Access access = adminCoworkingAccessRepository.findByAdminIdAndCoworkingId(adminId, coworkingId)
                 .filter(found -> Boolean.TRUE.equals(found.getActive()) && !Boolean.TRUE.equals(found.getCoworking()
                         .getArchived()))
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
 
         return ResolvedAdminAccessContext.builder().adminId(access.getAdmin().getId()).coworkingId(access.getCoworking()
                 .getId()).owner(false).grants(accessService.resolveGrantedActions(access)).build();
@@ -59,7 +59,7 @@ public class AdminAuthorizationService {
     private void ensureAllowed(ResolvedAdminAccessContext context, Grant action, Long coworkingId) {
         if (!context.hasAction(action)) {
             String scope = coworkingId == null ? "global" : "coworking=" + coworkingId;
-            throw new AccessDeniedException("Action %s is not allowed for %s scope".formatted(action, scope));
+            throw new AccessDeniedException("Недостаточно прав для выполнения действия.");
         }
     }
 }

@@ -31,7 +31,7 @@ export function useAppContext(options: UseAppContextOptions = {}) {
           router.replace('/login');
           return;
         }
-        setErrorMessage(error instanceof Error ? error.message : 'Unable to load context.');
+        setErrorMessage(error instanceof Error ? error.message : 'Не удалось загрузить контекст.');
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);

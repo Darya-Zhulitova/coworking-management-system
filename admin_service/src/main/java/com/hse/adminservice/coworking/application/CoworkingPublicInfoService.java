@@ -18,6 +18,15 @@ public class CoworkingPublicInfoService {
     public CoworkingPublicInfoResponse getById(Long coworkingId) {
         return coworkingRepository.findByIdAndArchivedFalse(coworkingId)
                 .map(coworkingMapper::toPublicInfoResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
+    }
+
+    public CoworkingPublicInfoResponse getByJoinToken(String joinToken) {
+        if (joinToken == null || joinToken.isBlank()) {
+            throw new ResourceNotFoundException("Ссылка приглашения в коворкинг не найдена");
+        }
+        return coworkingRepository.findByJoinTokenAndArchivedFalse(joinToken.trim())
+                .map(coworkingMapper::toPublicInfoResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Ссылка приглашения в коворкинг не найдена"));
     }
 }

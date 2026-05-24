@@ -12,5 +12,5 @@ public class ServiceRequestTypeCreateRequest {
 
     @NotNull
     @Min(0)
-    private Integer cost;
+    private Long cost;
 }

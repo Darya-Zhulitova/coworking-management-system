@@ -41,16 +41,23 @@ const cards = [
   {
     key: 'tariffs',
     title: 'Тарифы',
-    text: 'Настройка тарифов, правил скидок и коэффициентов компенсации.',
+    text: 'Настройка тарифов и коэффициентов компенсации.',
     hrefSuffix: '/settings/tariffs',
     grant: 'TARIFF_READ'
   },
   {
     key: 'service-request-types',
     title: 'Типы сервисных заявок',
-    text: 'Управление шаблонами, которые копируются в новые пользовательские заявки.',
+    text: 'Управление шаблонами, которые копируются в новые сервисные заявки пользователей.',
     hrefSuffix: '/settings/service-request-types',
     grant: 'SERVICE_REQUEST_TYPE_READ'
+  },
+  {
+    key: 'join-link',
+    title: 'Ссылка на коворкинг',
+    text: 'Генерация, перегенерация, копирование и удаление ссылки для присоединения пользователей.',
+    hrefSuffix: '/settings/join-link',
+    grant: 'COWORKING_READ'
   },
 ];
 

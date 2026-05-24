@@ -6,6 +6,7 @@ import lombok.Builder;
 public record BookingUserResponse(
         Long membershipId,
         Long userId,
-        String name
+        String name,
+        String email
 ) {
 }

@@ -9,8 +9,8 @@ const GRANT_LABELS: Record<string, string> = {
   PLACE_EDIT: 'Редактирование мест',
   TARIFF_READ: 'Просмотр тарифов',
   TARIFF_EDIT: 'Редактирование тарифов',
-  SERVICE_REQUEST_TYPE_READ: 'Просмотр типов сервисных заявок',
-  SERVICE_REQUEST_TYPE_EDIT: 'Редактирование типов сервисных заявок',
+  SERVICE_REQUEST_TYPE_READ: 'Просмотр типов заявок',
+  SERVICE_REQUEST_TYPE_EDIT: 'Редактирование типов заявок',
   ROLE_READ: 'Просмотр ролей',
   ROLE_EDIT: 'Редактирование ролей',
   ACCESS_READ: 'Просмотр сотрудников',
@@ -18,7 +18,7 @@ const GRANT_LABELS: Record<string, string> = {
   SCHEDULE_READ: 'Просмотр расписания',
   SCHEDULE_EDIT: 'Редактирование расписания',
   USER_READ: 'Просмотр пользователей',
-  USER_EDIT: 'Управление пользовательскими заявками',
+  USER_EDIT: 'Управление пользователями',
   BOOKING_READ: 'Просмотр бронирований',
   BOOKING_EDIT: 'Управление бронированиями',
 };
@@ -38,8 +38,8 @@ const MEMBERSHIP_STATUS_LABELS: Record<string, string> = {
 
 const PAY_REQUEST_STATUS_LABELS: Record<string, string> = {
   PENDING: 'Ожидает решения',
-  APPROVED: 'Подтверждён',
-  REJECTED: 'Отклонён',
+  APPROVED: 'Подтверждена',
+  REJECTED: 'Отклонена',
 };
 
 const SERVICE_REQUEST_STATUS_LABELS: Record<string, string> = {
@@ -62,17 +62,6 @@ const SCHEDULE_EXCEPTION_TYPE_LABELS: Record<string, string> = {
   CLOSE: 'Закрыто',
 };
 
-const LEDGER_TYPE_LABELS: Record<string, string> = {
-  DEPOSIT: 'Пополнение',
-  WITHDRAWAL: 'Вывод средств',
-  BOOKING_CHARGE: 'Оплата бронирования',
-  CANCELLATION_REFUND: 'Возврат за отмену',
-  DAY_CLOSURE_COMPENSATION: 'Компенсация за закрытие дня',
-  MEMBERSHIP_BLOCK_COMPENSATION: 'Компенсация при блокировке участия',
-  MANUAL_CREDIT: 'Ручное начисление',
-  MANUAL_DEBIT: 'Ручное списание',
-  SERVICE_REQUEST_CHARGE: 'Оплата сервисной заявки',
-};
 
 export function formatGrantLabel(value: string): string {
   return GRANT_LABELS[value] ?? value;
@@ -107,9 +96,6 @@ export function formatScheduleExceptionType(value: string): string {
   return SCHEDULE_EXCEPTION_TYPE_LABELS[value] ?? value;
 }
 
-export function formatLedgerType(value: string): string {
-  return LEDGER_TYPE_LABELS[value] ?? value;
-}
 
 export function formatActiveStatus(active: boolean): string {
   return active ? 'Активно' : 'Неактивно';

@@ -33,7 +33,7 @@ export function CoworkingRolesPageClient({ coworkingId }: { coworkingId: number 
   const [savingRoleId, setSavingRoleId] = useState<number | 'create' | null>(null);
   const [editingRoleId, setEditingRoleId] = useState<number | null>(null);
   const [formName, setFormName] = useState('');
-  const [selectedПрава, setSelectedПрава] = useState<string[]>(['ROLE_READ']);
+  const [selectedGrants, setSelectedGrants] = useState<string[]>(['ROLE_READ']);
   const [formActive, setFormActive] = useState(true);
   const canManageRoles = useMemo(() => context?.grants.includes('ROLE_EDIT') ?? false, [context]);
   const loadRoles = useCallback(async () => setRoles(await requestJson<CoworkingRoleDefinition[]>(`/api/coworkings/${coworkingId}/staff/roles`)), [coworkingId]);
@@ -47,13 +47,13 @@ export function CoworkingRolesPageClient({ coworkingId }: { coworkingId: number 
   const resetForm = () => {
     setEditingRoleId(null);
     setFormName('');
-    setSelectedПрава(['ROLE_READ']);
+    setSelectedGrants(['ROLE_READ']);
     setFormActive(true);
   };
   const loadRoleIntoForm = (role: CoworkingRoleDefinition) => {
     setEditingRoleId(role.roleId);
     setFormName(role.name);
-    setSelectedПрава(role.grants);
+    setSelectedGrants(role.grants);
     setFormActive(role.active);
   };
 
@@ -68,7 +68,7 @@ export function CoworkingRolesPageClient({ coworkingId }: { coworkingId: number 
       await requestJson(path, {
         method: editingRoleId == null ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: formName, grants: selectedПрава, active: formActive })
+        body: JSON.stringify({ name: formName, grants: selectedGrants, active: formActive })
       });
       await loadRoles();
       setSubmitMessage(editingRoleId == null ? 'Роль создана.' : 'Роль обновлена.');
@@ -111,8 +111,8 @@ export function CoworkingRolesPageClient({ coworkingId }: { coworkingId: number 
         <div className="d-flex flex-wrap gap-2">{grantOptions.map((grant) => <Form.Check key={grant} inline
                                                                                          type="checkbox" id={grant}
                                                                                          label={formatGrantLabel(grant)}
-                                                                                         checked={selectedПрава.includes(grant)}
-                                                                                         onChange={(e) => setSelectedПрава((current) => e.target.checked ? [...current, grant] : current.filter((item) => item !== grant))}/>)}</div>
+                                                                                         checked={selectedGrants.includes(grant)}
+                                                                                         onChange={(e) => setSelectedGrants((current) => e.target.checked ? [...current, grant] : current.filter((item) => item !== grant))}/>)}</div>
       </div>
       <Form.Check label="Роль активна" checked={formActive} onChange={(e) => setFormActive(e.target.checked)}/><Stack
         direction="horizontal" gap={2}><Button type="submit"

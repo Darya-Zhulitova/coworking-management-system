@@ -12,13 +12,8 @@ import Table from 'react-bootstrap/Table';
 import { FullPageError, FullPageLoader } from '@/components/page-state';
 import { useAppContext } from '@/features/context/use-app-context';
 import { requestJson } from '@/lib/client/api';
-import type { TariffDiscountRuleDto, TariffDto } from '@/types/place';
+import type { TariffDto } from '@/types/place';
 import { formatRublesFromKopecks } from '@/lib/format/money';
-
-function formatRules(rules: TariffDiscountRuleDto[]) {
-  if (rules.length === 0) return 'Правила скидок не заданы';
-  return rules.map((rule) => `${rule.thresholdQuantity}+ → ${rule.discountPercent}%`).join(', ');
-}
 
 export function CoworkingTariffsPageClient({ coworkingId }: { coworkingId: number }) {
   const router = useRouter();
@@ -62,13 +57,11 @@ export function CoworkingTariffsPageClient({ coworkingId }: { coworkingId: numbe
         body: JSON.stringify({
           name: item.name,
           pricePerDay: item.pricePerDay,
-          minBookingDays: item.minBookingDays,
           fullRefundHoursBefore: item.fullRefundHoursBefore,
           lateCancellationRefundPercent: item.lateCancellationRefundPercent,
           cancellationCompensationCoefficient: item.cancellationCompensationCoefficient,
           dayClosureCompensationCoefficient: item.dayClosureCompensationCoefficient,
           membershipBlockCompensationCoefficient: item.membershipBlockCompensationCoefficient,
-          discountRules: item.discountRules,
           active: !item.active,
         }),
       });
@@ -90,8 +83,8 @@ export function CoworkingTariffsPageClient({ coworkingId }: { coworkingId: numbe
       <Container className="py-4 py-md-5">
         <Stack gap={4}>
           <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
-            <div><h2 className="mb-2">Тарифы</h2><p className="mb-0 text-body-secondary">Управление тарифами, правилами
-              скидок и версиями конфигурации для пользовательского домена.</p></div>
+            <div><h2 className="mb-2">Тарифы</h2><p className="mb-0 text-body-secondary">Управление внутренними ценовыми
+              правилами и версиями конфигурации для пользовательского домена.</p></div>
             {canManage ? <Button onClick={() => router.push(`/coworkings/${coworkingId}/settings/tariffs/new`)}>Создать
               тариф</Button> : null}
           </div>
@@ -107,7 +100,6 @@ export function CoworkingTariffsPageClient({ coworkingId }: { coworkingId: numbe
                   <th>Версия</th>
                   <th>Стоимость</th>
                   <th>Возврат</th>
-                  <th>Правила скидок</th>
                   <th>Статус</th>
                   {canManage ? <th className="text-end">Действия</th> : null}
                 </tr>
@@ -115,7 +107,7 @@ export function CoworkingTariffsPageClient({ coworkingId }: { coworkingId: numbe
                 <tbody>
                 {tariffs.length === 0 ? (
                   <tr>
-                    <td colSpan={canManage ? 7 : 6} className="text-center text-body-secondary py-4">Тарифы пока не
+                    <td colSpan={canManage ? 6 : 5} className="text-center text-body-secondary py-4">Тарифы пока не
                       созданы.
                     </td>
                   </tr>
@@ -123,7 +115,6 @@ export function CoworkingTariffsPageClient({ coworkingId }: { coworkingId: numbe
                   <tr key={item.id}>
                     <td>
                       <div className="fw-semibold">{item.name}</div>
-                      <div className="text-body-secondary small">Минимум дней: {item.minBookingDays} дн.</div>
                     </td>
                     <td>
                       <Badge bg="info">v{item.version}</Badge>
@@ -143,7 +134,6 @@ export function CoworkingTariffsPageClient({ coworkingId }: { coworkingId: numbe
                       <div className="text-body-secondary small">Коэф.
                         блокировки {item.membershipBlockCompensationCoefficient}</div>
                     </td>
-                    <td>{formatRules(item.discountRules)}</td>
                     <td>
                       <Stack direction="horizontal" gap={2} className="flex-wrap">
                         <Badge

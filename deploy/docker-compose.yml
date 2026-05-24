@@ -1,0 +1,151 @@
+services:
+  user-postgres:
+    image: postgres:16-alpine
+    container_name: cms-user-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${USER_DB_NAME:-userservice}
+      POSTGRES_USER: ${USER_DB_USERNAME:-userservice}
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD:-userservice_password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "127.0.0.1:${USER_DB_PORT:-5433}:5432"
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  admin-postgres:
+    image: postgres:16-alpine
+    container_name: cms-admin-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${ADMIN_DB_NAME:-adminservice}
+      POSTGRES_USER: ${ADMIN_DB_USERNAME:-adminservice}
+      POSTGRES_PASSWORD: ${ADMIN_DB_PASSWORD:-adminservice_password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "127.0.0.1:${ADMIN_DB_PORT:-5434}:5432"
+    volumes:
+      - admin_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  user-service:
+    build:
+      context: ../user-service
+    container_name: cms-user-service
+    restart: unless-stopped
+    depends_on:
+      user-postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      USER_DB_URL: jdbc:postgresql://user-postgres:5432/${USER_DB_NAME:-userservice}
+      USER_DB_USERNAME: ${USER_DB_USERNAME:-userservice}
+      USER_DB_PASSWORD: ${USER_DB_PASSWORD:-userservice_password}
+      ADMIN_SERVICE_BASE_URL: ${ADMIN_SERVICE_BASE_URL:-http://admin-service:8081/api}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      USER_JWT_SECRET: ${USER_JWT_SECRET:?USER_JWT_SECRET is required}
+      USER_JWT_EXPIRATION_MS: ${USER_JWT_EXPIRATION_MS:-86400000}
+      S3_ENDPOINT: ${S3_ENDPOINT:?S3_ENDPOINT is required}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY is required}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY is required}
+      S3_BUCKET: ${S3_BUCKET:?S3_BUCKET is required}
+      S3_REGION: ${S3_REGION:-ru-1}
+      S3_PRESIGNED_URL_TTL_MINUTES: ${S3_PRESIGNED_URL_TTL_MINUTES:-60}
+    ports:
+      - "${USER_SERVICE_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -ec '</dev/tcp/127.0.0.1/8080'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  admin-service:
+    build:
+      context: ../admin_service
+    container_name: cms-admin-service
+    restart: unless-stopped
+    depends_on:
+      admin-postgres:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      ADMIN_DB_URL: jdbc:postgresql://admin-postgres:5432/${ADMIN_DB_NAME:-adminservice}
+      ADMIN_DB_USERNAME: ${ADMIN_DB_USERNAME:-adminservice}
+      ADMIN_DB_PASSWORD: ${ADMIN_DB_PASSWORD:-adminservice_password}
+      USER_SERVICE_BASE_URL: ${USER_SERVICE_BASE_URL:-http://user-service:8080/api}
+      USER_FRONTEND_JOIN_BASE_URL: ${USER_FRONTEND_JOIN_BASE_URL:-https://myspacebooking.ru/join}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?ADMIN_JWT_SECRET is required}
+      ADMIN_JWT_EXPIRATION_MS: ${ADMIN_JWT_EXPIRATION_MS:-86400000}
+      S3_ENDPOINT: ${S3_ENDPOINT:?S3_ENDPOINT is required}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY is required}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY is required}
+      S3_BUCKET: ${S3_BUCKET:?S3_BUCKET is required}
+      S3_REGION: ${S3_REGION:-ru-1}
+      S3_PRESIGNED_URL_TTL_MINUTES: ${S3_PRESIGNED_URL_TTL_MINUTES:-60}
+    ports:
+      - "${ADMIN_SERVICE_PORT:-8081}:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -ec '</dev/tcp/127.0.0.1/8081'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  user-frontend:
+    build:
+      context: ../user-frontend
+    container_name: cms-user-frontend
+    restart: unless-stopped
+    depends_on:
+      user-service:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      USER_BACKEND_BASE_URL: ${USER_BACKEND_BASE_URL:-http://user-service:8080}
+    ports:
+      - "127.0.0.1:${USER_FRONTEND_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000').then(() => process.exit(0)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  admin-frontend:
+    build:
+      context: ../admin_frontend
+    container_name: cms-admin-frontend
+    restart: unless-stopped
+    depends_on:
+      admin-service:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      ADMIN_BACKEND_BASE_URL: ${ADMIN_BACKEND_BASE_URL:-http://admin-service:8081/api}
+    ports:
+      - "127.0.0.1:${ADMIN_FRONTEND_PORT:-3001}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000').then(() => process.exit(0)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+volumes:
+  user_postgres_data:
+  admin_postgres_data:

@@ -14,8 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class CoworkingPublicInfoController {
     private final CoworkingPublicInfoService coworkingPublicInfoService;
 
-    @GetMapping("/{coworkingId}/info")
+    @GetMapping("/{coworkingId}/public-profile")
     public CoworkingPublicInfoResponse getPublicInfo(@PathVariable Long coworkingId) {
         return coworkingPublicInfoService.getById(coworkingId);
+    }
+
+    @GetMapping("/join/{joinToken}/public-profile")
+    public CoworkingPublicInfoResponse getPublicInfoByJoinToken(@PathVariable String joinToken) {
+        return coworkingPublicInfoService.getByJoinToken(joinToken);
     }
 }

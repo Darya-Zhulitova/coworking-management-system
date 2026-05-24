@@ -19,4 +19,5 @@ public class CoworkingScheduleDaysRequest {
     private Boolean saturday;
     @NotNull
     private Boolean sunday;
+    private String impactHash;
 }

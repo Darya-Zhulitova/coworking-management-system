@@ -50,6 +50,7 @@ export function CoworkingDetailsPageClient({ coworkingId }: { coworkingId: numbe
   return <main className="page-shell"><Container className="py-4 py-md-5"><Stack gap={4}><h2
     className="mb-0">{coworking.name}</h2><Card
     className="content-card"><CardBody>
+    <h2>Предпросмотр информации о коворкинге</h2>
     <div className="mb-3 text-body-secondary">{coworking.address}</div>
     <div className="mb-3 fw-semibold">{coworking.workingHoursLabel}</div>
     {coworking.heroTitle ?
@@ -57,18 +58,21 @@ export function CoworkingDetailsPageClient({ coworkingId }: { coworkingId: numbe
     <div className="mb-3 text-body-secondary">{coworking.heroText}</div> : null}
     <div className="mb-3">{coworking.description}</div>
     {coworking.imageUrls.length > 0 ? <div className="mb-3">
-      <div className="fw-semibold mb-2">Ссылки на изображения</div>
-      <Stack gap={2}>{coworking.imageUrls.map((imageUrl, index) => <div key={`${coworking.id}-${index}`}
-                                                                        className="small">{index + 1}. {imageUrl}</div>)}</Stack>
+      <div className="fw-semibold mb-2">Фотографии коворкинга</div>
+      <Stack direction="horizontal" gap={2} className="flex-wrap">{coworking.imageUrls.map((imageUrl, index) =>
+        <img key={`${coworking.id}-${index}`} src={imageUrl} alt={`Фото коворкинга ${index + 1}`}
+             style={{ width: 180, height: 101, objectFit: 'cover', borderRadius: 12 }}/>)}</Stack>
     </div> : null}
     <Stack direction="horizontal" gap={2} className="flex-wrap mb-3"><Badge bg="secondary">ID
       коворкинга: {coworking.id}</Badge><Badge
       bg={coworking.active ? 'success' : 'secondary'}>{coworking.active ? 'Активен' : 'Неактивен'}</Badge><Badge
       bg={coworking.archived ? 'dark' : 'info'}>{coworking.archived ? 'В архиве' : 'Показывается'}</Badge><Badge
       bg={coworking.autoApproveMembership ? 'success' : 'warning'}>{coworking.autoApproveMembership ? 'Автоподтверждение включено' : 'Подтверждение участия вручную'}</Badge>
+      <Badge
+        bg={coworking.floorMapEnabled ? 'primary' : 'secondary'}>{coworking.floorMapEnabled ? 'Карты этажей включены' : 'Бронирование без карт этажей'}</Badge>
     </Stack></CardBody></Card>{canEdit ?
     <Card className="content-card"><CardBody><CardTitle as="h2" className="h4 mb-3">Редактирование
       коворкинга</CardTitle><CoworkingEditForm coworking={coworking}/></CardBody></Card> :
-    <Alert variant="secondary" className="mb-0">Эта учётная запись может просматривать данные коворкинга, но не
+    <Alert variant="secondary" className="mb-0">Эта учетная запись может просматривать данные коворкинга, но не
       может изменять его конфигурацию.</Alert>}</Stack></Container></main>;
 }

@@ -3,9 +3,14 @@ import 'server-only';
 import { env } from '@/lib/config/env';
 import type { AdminLoginRequest, AdminLoginResponse } from '@/types/auth';
 import type { AppContextDto } from '@/types/context';
-import type { Coworking, CoworkingDashboard, CreateCoworkingRequest, UpdateCoworkingRequest } from '@/types/coworking';
 import type {
-  CoworkingConfigSnapshot,
+  Coworking,
+  CoworkingDashboard,
+  CoworkingJoinLink,
+  CreateCoworkingRequest,
+  UpdateCoworkingRequest
+} from '@/types/coworking';
+import type {
   CoworkingScheduleDto,
   CoworkingScheduleExceptionDto,
   CoworkingUserReadModelDto,
@@ -17,8 +22,12 @@ import type {
   CreateServiceRequestTypeRequest,
   CreateTariffRequest,
   FloorDto,
+  ImpactCommitRequest,
+  MembershipListItemDto,
+  MembershipProfileDto,
   MembershipQueueItemDto,
   OperationalImpactDto,
+  OperationsDashboardDto,
   PayRequestQueueItemDto,
   PlaceBookingListResponseDto,
   PlaceClosingDto,
@@ -30,6 +39,7 @@ import type {
   ServiceRequestMessageDto,
   ServiceRequestQueueItemDto,
   ServiceRequestTypeDto,
+  ServiceRequestWorkspaceDto,
   TariffDto,
   UpdateFloorRequest,
   UpdatePlaceRequest,
@@ -38,6 +48,7 @@ import type {
   UpdateTariffRequest,
   UserAnalyticsDto,
   UserQueueSummaryDto,
+  WithImpactHash,
 } from '@/types/place';
 import type {
   AssignCoworkingRoleRequest,
@@ -81,7 +92,7 @@ async function requestBackend<T>(path: string, init?: RequestInit, token?: strin
       message?: unknown
     }).message === 'string'
       ? (data as { message: string }).message
-      : 'Backend request failed';
+      : 'Запрос к серверу не выполнен';
     throw new BackendRequestError(message, response.status, data);
   }
 
@@ -113,6 +124,19 @@ export async function getCoworkingDashboard(token: string, id: number): Promise<
   return requestBackend<CoworkingDashboard>(`/coworkings/${id}/dashboard`, undefined, token);
 }
 
+
+export async function getCoworkingJoinLink(token: string, id: number): Promise<CoworkingJoinLink> {
+  return requestBackend<CoworkingJoinLink>(`/coworkings/${id}/join-link`, undefined, token);
+}
+
+export async function generateCoworkingJoinLink(token: string, id: number): Promise<CoworkingJoinLink> {
+  return requestBackend<CoworkingJoinLink>(`/coworkings/${id}/join-link`, { method: 'POST' }, token);
+}
+
+export async function deleteCoworkingJoinLink(token: string, id: number): Promise<CoworkingJoinLink> {
+  return requestBackend<CoworkingJoinLink>(`/coworkings/${id}/join-link`, { method: 'DELETE' }, token);
+}
+
 export async function createCoworking(token: string, payload: CreateCoworkingRequest): Promise<Coworking> {
   return requestBackend<Coworking>('/coworkings', {
     method: 'POST',
@@ -126,6 +150,14 @@ export async function updateCoworking(token: string, id: number, payload: Update
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+  }, token);
+}
+
+
+export async function uploadCoworkingPhoto(token: string, coworkingId: number, formData: FormData): Promise<Coworking> {
+  return requestBackend<Coworking>(`/coworkings/${coworkingId}/photos`, {
+    method: 'POST',
+    body: formData,
   }, token);
 }
 
@@ -157,6 +189,7 @@ export async function updateCoworkingRoleDefinition(token: string, coworkingId: 
     body: JSON.stringify(payload),
   }, token);
 }
+
 
 export async function archiveCoworkingRole(token: string, coworkingId: number, roleId: number): Promise<void> {
   await requestBackend<void>(`/coworkings/${coworkingId}/staff/roles/${roleId}`, { method: 'DELETE' }, token);
@@ -287,20 +320,31 @@ export async function updatePlace(token: string, coworkingId: number, placeId: n
   }, token);
 }
 
+export async function uploadPlacePhoto(token: string, coworkingId: number, placeId: number, formData: FormData): Promise<PlaceDto> {
+  return requestBackend<PlaceDto>(`/coworkings/${coworkingId}/places/${placeId}/photo`, {
+    method: 'POST',
+    body: formData,
+  }, token);
+}
+
 export async function getPlaceBookings(token: string, coworkingId: number, placeId: number): Promise<PlaceBookingListResponseDto> {
   return requestBackend<PlaceBookingListResponseDto>(`/coworkings/${coworkingId}/places/${placeId}/bookings`, undefined, token);
 }
 
 export async function previewDeactivatePlace(token: string, coworkingId: number, placeId: number): Promise<PlaceDeactivationPreview> {
-  return requestBackend<PlaceDeactivationPreview>(`/coworkings/${coworkingId}/places/${placeId}/deactivate/preview`, { method: 'POST' }, token);
+  return requestBackend<PlaceDeactivationPreview>(`/coworkings/${coworkingId}/places/${placeId}/deactivation/preview`, { method: 'POST' }, token);
 }
 
-export async function commitDeactivatePlace(token: string, coworkingId: number, placeId: number): Promise<PlaceDeactivationPreview> {
-  return requestBackend<PlaceDeactivationPreview>(`/coworkings/${coworkingId}/places/${placeId}/deactivate/commit`, { method: 'POST' }, token);
+export async function commitDeactivatePlace(token: string, coworkingId: number, placeId: number, payload: ImpactCommitRequest): Promise<PlaceDeactivationPreview> {
+  return requestBackend<PlaceDeactivationPreview>(`/coworkings/${coworkingId}/places/${placeId}/deactivation/commit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, token);
 }
 
-export async function deactivatePlace(token: string, coworkingId: number, placeId: number): Promise<PlaceDeactivationPreview> {
-  return commitDeactivatePlace(token, coworkingId, placeId);
+export async function deactivatePlace(token: string, coworkingId: number, placeId: number, payload: ImpactCommitRequest): Promise<PlaceDeactivationPreview> {
+  return commitDeactivatePlace(token, coworkingId, placeId, payload);
 }
 
 export async function activatePlace(token: string, coworkingId: number, placeId: number): Promise<PlaceDto> {
@@ -313,21 +357,9 @@ export async function archivePlace(token: string, coworkingId: number, placeId: 
   await requestBackend<void>(`/coworkings/${coworkingId}/places/${placeId}`, { method: 'DELETE' }, token);
 }
 
-export async function getCoworkingConfigSnapshot(token: string, coworkingId: number): Promise<CoworkingConfigSnapshot> {
-  return requestBackend<CoworkingConfigSnapshot>(`/internal/config/coworkings/${coworkingId}/snapshot`, undefined, token);
-}
-
 
 export async function getCoworkingSchedule(token: string, coworkingId: number): Promise<CoworkingScheduleDto> {
   return requestBackend<CoworkingScheduleDto>(`/coworkings/${coworkingId}/schedule`, undefined, token);
-}
-
-export async function updateCoworkingSchedule(token: string, coworkingId: number, payload: Omit<CoworkingScheduleDto, 'schedule'> & Partial<Pick<CoworkingScheduleDto, 'schedule'>>): Promise<OperationalImpactDto> {
-  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }, token);
 }
 
 export async function getCoworkingScheduleExceptions(token: string, coworkingId: number): Promise<CoworkingScheduleExceptionDto[]> {
@@ -342,6 +374,7 @@ export async function createCoworkingScheduleException(token: string, coworkingI
   }, token);
 }
 
+
 export async function archiveCoworkingScheduleException(token: string, coworkingId: number, exceptionId: number): Promise<void> {
   await requestBackend<void>(`/coworkings/${coworkingId}/schedule/exceptions/${exceptionId}`, { method: 'DELETE' }, token);
 }
@@ -351,27 +384,43 @@ export async function getPlaceClosings(token: string, coworkingId: number, floor
   return requestBackend<PlaceClosingDto[]>(`/coworkings/${coworkingId}/schedule/closings${query}`, undefined, token);
 }
 
-export async function createPlaceClosing(token: string, coworkingId: number, payload: CreatePlaceClosingRequest): Promise<OperationalImpactDto> {
-  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/closings`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }, token);
-}
-
-export async function closeCoworkingDay(token: string, coworkingId: number, payload: {
-  date: string;
-  name: string
-}): Promise<OperationalImpactDto> {
-  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/close-day`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }, token);
-}
-
 export async function archivePlaceClosing(token: string, coworkingId: number, closingId: number): Promise<void> {
   await requestBackend<void>(`/coworkings/${coworkingId}/schedule/closings/${closingId}`, { method: 'DELETE' }, token);
+}
+
+
+export async function getMembershipList(token: string, coworkingId: number, search?: string): Promise<MembershipListItemDto[]> {
+  const query = search?.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+  return requestBackend<MembershipListItemDto[]>(`/coworkings/${coworkingId}/memberships${query}`, undefined, token);
+}
+
+export async function getMembershipProfile(token: string, coworkingId: number, membershipId: number): Promise<MembershipProfileDto> {
+  return requestBackend<MembershipProfileDto>(`/coworkings/${coworkingId}/memberships/${membershipId}`, undefined, token);
+}
+
+export async function adjustMembershipBalance(token: string, coworkingId: number, membershipId: number, payload: {
+  amountMinorUnits: number;
+  comment?: string | null
+}): Promise<MembershipProfileDto> {
+  return requestBackend<MembershipProfileDto>(`/coworkings/${coworkingId}/memberships/${membershipId}/balance-adjustments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function previewMembershipBlock(token: string, coworkingId: number, membershipId: number): Promise<OperationalImpactDto> {
+  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/memberships/${membershipId}/block-preview`, {
+    method: 'POST',
+  }, token);
+}
+
+export async function blockMembership(token: string, coworkingId: number, membershipId: number, payload: ImpactCommitRequest): Promise<OperationalImpactDto> {
+  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/memberships/${membershipId}/block`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, token);
 }
 
 export async function getCoworkingUsers(token: string, coworkingId: number): Promise<CoworkingUserReadModelDto[]> {
@@ -408,94 +457,98 @@ export async function archiveServiceRequestType(token: string, coworkingId: numb
   await requestBackend<void>(`/coworkings/${coworkingId}/service-request-types/${serviceRequestTypeId}`, { method: 'DELETE' }, token);
 }
 
-export async function getUserQueueSummary(token: string, coworkingId: number): Promise<UserQueueSummaryDto> {
-  return requestBackend<UserQueueSummaryDto>(`/coworkings/${coworkingId}/users/summary`, undefined, token);
-}
-
-export async function getUserAnalytics(token: string, coworkingId: number): Promise<UserAnalyticsDto> {
-  return requestBackend<UserAnalyticsDto>(`/coworkings/${coworkingId}/users/analytics`, undefined, token);
+export async function getOperationsDashboard(token: string, coworkingId: number): Promise<OperationsDashboardDto> {
+  return requestBackend<OperationsDashboardDto>(`/coworkings/${coworkingId}/operations-dashboard`, undefined, token);
 }
 
 export async function getMembershipQueue(token: string, coworkingId: number): Promise<MembershipQueueItemDto[]> {
-  return requestBackend<MembershipQueueItemDto[]>(`/coworkings/${coworkingId}/users/memberships`, undefined, token);
+  return requestBackend<MembershipQueueItemDto[]>(`/coworkings/${coworkingId}/membership-requests`, undefined, token);
 }
 
-export async function approveMembership(token: string, coworkingId: number, membershipId: number): Promise<void> {
-  await requestBackend<void>(`/coworkings/${coworkingId}/users/memberships/${membershipId}/approve`, { method: 'POST' }, token);
-}
-
-export async function rejectMembership(token: string, coworkingId: number, membershipId: number): Promise<void> {
-  await requestBackend<void>(`/coworkings/${coworkingId}/users/memberships/${membershipId}/reject`, { method: 'POST' }, token);
-}
-
-export async function getPayRequestQueue(token: string, coworkingId: number): Promise<PayRequestQueueItemDto[]> {
-  return requestBackend<PayRequestQueueItemDto[]>(`/coworkings/${coworkingId}/users/pay-requests`, undefined, token);
-}
-
-export async function approvePayRequest(token: string, coworkingId: number, payRequestId: number): Promise<void> {
-  await requestBackend<void>(`/coworkings/${coworkingId}/users/pay-requests/${payRequestId}/approve`, { method: 'POST' }, token);
-}
-
-export async function rejectPayRequest(token: string, coworkingId: number, payRequestId: number): Promise<void> {
-  await requestBackend<void>(`/coworkings/${coworkingId}/users/pay-requests/${payRequestId}/reject`, { method: 'POST' }, token);
-}
-
-export async function getServiceRequestQueue(token: string, coworkingId: number): Promise<ServiceRequestQueueItemDto[]> {
-  return requestBackend<ServiceRequestQueueItemDto[]>(`/coworkings/${coworkingId}/users/service-requests`, undefined, token);
-}
-
-export async function getServiceRequestDetails(token: string, coworkingId: number, serviceRequestId: number): Promise<ServiceRequestDetailDto> {
-  return requestBackend<ServiceRequestDetailDto>(`/coworkings/${coworkingId}/users/service-requests/${serviceRequestId}`, undefined, token);
-}
-
-export async function getServiceRequestMessages(token: string, coworkingId: number, serviceRequestId: number): Promise<ServiceRequestMessageDto[]> {
-  return requestBackend<ServiceRequestMessageDto[]>(`/coworkings/${coworkingId}/users/service-requests/${serviceRequestId}/messages`, undefined, token);
-}
-
-export async function createServiceRequestMessage(token: string, coworkingId: number, serviceRequestId: number, text: string): Promise<ServiceRequestMessageDto> {
-  return requestBackend<ServiceRequestMessageDto>(`/coworkings/${coworkingId}/users/service-requests/${serviceRequestId}/messages`, {
+export async function decideMembership(token: string, coworkingId: number, membershipId: number, decision: 'APPROVE' | 'REJECT', comment?: string): Promise<void> {
+  await requestBackend<void>(`/coworkings/${coworkingId}/membership-requests/${membershipId}/decision`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ decision, comment: comment ?? null })
   }, token);
 }
 
-export async function updateServiceRequestStatus(token: string, coworkingId: number, serviceRequestId: number, status: string): Promise<void> {
-  await requestBackend<void>(`/coworkings/${coworkingId}/users/service-requests/${serviceRequestId}/status/${status}`, { method: 'POST' }, token);
+export async function getPayRequestQueue(token: string, coworkingId: number): Promise<PayRequestQueueItemDto[]> {
+  return requestBackend<PayRequestQueueItemDto[]>(`/coworkings/${coworkingId}/pay-requests`, undefined, token);
+}
+
+export async function decidePayRequest(token: string, coworkingId: number, payRequestId: number, decision: 'APPROVE' | 'REJECT', comment?: string): Promise<void> {
+  await requestBackend<void>(`/coworkings/${coworkingId}/pay-requests/${payRequestId}/decision`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ decision, comment: comment ?? null })
+  }, token);
+}
+
+export async function getServiceRequestQueue(token: string, coworkingId: number): Promise<ServiceRequestQueueItemDto[]> {
+  return requestBackend<ServiceRequestQueueItemDto[]>(`/coworkings/${coworkingId}/service-requests`, undefined, token);
+}
+
+export async function getServiceRequestWorkspace(token: string, coworkingId: number, serviceRequestId: number): Promise<ServiceRequestWorkspaceDto> {
+  return requestBackend<ServiceRequestWorkspaceDto>(`/coworkings/${coworkingId}/service-requests/${serviceRequestId}/workspace`, undefined, token);
+}
+
+export async function createServiceRequestMessage(
+  token: string,
+  coworkingId: number,
+  serviceRequestId: number,
+  formData: FormData,
+): Promise<ServiceRequestMessageDto> {
+  return requestBackend<ServiceRequestMessageDto>(
+    `/coworkings/${coworkingId}/service-requests/${serviceRequestId}/messages`,
+    {
+      method: 'POST',
+      body: formData,
+    },
+    token,
+  );
+}
+
+export async function decideServiceRequest(token: string, coworkingId: number, serviceRequestId: number, decision: 'IN_PROGRESS' | 'RESOLVE' | 'REJECT', comment?: string): Promise<void> {
+  await requestBackend<void>(`/coworkings/${coworkingId}/service-requests/${serviceRequestId}/decision`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ decision, comment: comment ?? null })
+  }, token);
 }
 
 export async function previewCoworkingScheduleUpdate(token: string, coworkingId: number, payload: Omit<CoworkingScheduleDto, 'schedule'> & Partial<Pick<CoworkingScheduleDto, 'schedule'>>): Promise<OperationalImpactDto> {
-  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/deactivate/preview`, {
+  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/preview`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
   }, token);
 }
 
-export async function commitCoworkingScheduleUpdate(token: string, coworkingId: number, payload: Omit<CoworkingScheduleDto, 'schedule'> & Partial<Pick<CoworkingScheduleDto, 'schedule'>>): Promise<OperationalImpactDto> {
-  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/deactivate/commit`, {
+export async function commitCoworkingScheduleUpdate(token: string, coworkingId: number, payload: WithImpactHash<Omit<CoworkingScheduleDto, 'schedule'> & Partial<Pick<CoworkingScheduleDto, 'schedule'>>>): Promise<OperationalImpactDto> {
+  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/commit`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
   }, token);
 }
 
 export async function previewCoworkingScheduleException(token: string, coworkingId: number, payload: CreateCoworkingScheduleExceptionRequest): Promise<OperationalImpactDto> {
-  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/exceptions/deactivate/preview`, {
+  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/exceptions/preview`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
   }, token);
 }
 
-export async function commitCoworkingScheduleException(token: string, coworkingId: number, payload: CreateCoworkingScheduleExceptionRequest): Promise<OperationalImpactDto> {
-  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/exceptions/deactivate/commit`, {
+export async function commitCoworkingScheduleException(token: string, coworkingId: number, payload: WithImpactHash<CreateCoworkingScheduleExceptionRequest>): Promise<OperationalImpactDto> {
+  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/exceptions/commit`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
   }, token);
 }
 
 export async function previewPlaceClosing(token: string, coworkingId: number, payload: CreatePlaceClosingRequest): Promise<OperationalImpactDto> {
-  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/closings/deactivate/preview`, {
+  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/closings/preview`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
   }, token);
 }
 
-export async function commitPlaceClosing(token: string, coworkingId: number, payload: CreatePlaceClosingRequest): Promise<OperationalImpactDto> {
-  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/closings/deactivate/commit`, {
+export async function commitPlaceClosing(token: string, coworkingId: number, payload: WithImpactHash<CreatePlaceClosingRequest>): Promise<OperationalImpactDto> {
+  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/closings/commit`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
   }, token);
 }
@@ -504,16 +557,82 @@ export async function previewCoworkingCloseDay(token: string, coworkingId: numbe
   date: string;
   name: string
 }): Promise<OperationalImpactDto> {
-  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/close-day/deactivate/preview`, {
+  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/close-day/preview`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
   }, token);
 }
 
-export async function commitCoworkingCloseDay(token: string, coworkingId: number, payload: {
+export async function commitCoworkingCloseDay(token: string, coworkingId: number, payload: WithImpactHash<{
   date: string;
   name: string
-}): Promise<OperationalImpactDto> {
-  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/close-day/deactivate/commit`, {
+}>): Promise<OperationalImpactDto> {
+  return requestBackend<OperationalImpactDto>(`/coworkings/${coworkingId}/schedule/close-day/commit`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
   }, token);
+}
+
+export async function getUserQueueSummary(token: string, coworkingId: number): Promise<UserQueueSummaryDto> {
+  const dashboard = await getOperationsDashboard(token, coworkingId);
+  return {
+    usersCount: dashboard.memberships.total,
+    pendingMemberships: dashboard.queues.pendingMemberships,
+    pendingPayRequests: dashboard.queues.pendingPayRequests,
+    openServiceRequests: dashboard.queues.openServiceRequests,
+    totalBookings: 0,
+    activeBookings: 0,
+    currentBalance: dashboard.finance.totalBalance,
+    monthlyIncome: dashboard.finance.monthlyIncome,
+    monthlyOccupancyPercent: dashboard.occupancy.monthlyPercent,
+  };
+}
+
+export async function getUserAnalytics(token: string, coworkingId: number): Promise<UserAnalyticsDto> {
+  const dashboard = await getOperationsDashboard(token, coworkingId);
+  return {
+    usersCount: dashboard.memberships.total,
+    activeMemberships: dashboard.memberships.active,
+    pendingMemberships: dashboard.memberships.pending,
+    blockedMemberships: dashboard.memberships.blocked,
+    totalBookings: 0,
+    activeBookings: 0,
+    unfinishedServiceRequests: dashboard.queues.openServiceRequests,
+    openPayRequests: dashboard.queues.pendingPayRequests,
+    totalBalance: dashboard.finance.totalBalance,
+    monthlyIncome: dashboard.finance.monthlyIncome,
+    monthlyOccupancyPercent: dashboard.occupancy.monthlyPercent,
+    monthlyIncomeHistory: [],
+    occupancyHistory: [],
+  };
+}
+
+export async function approveMembership(token: string, coworkingId: number, membershipId: number): Promise<void> {
+  await decideMembership(token, coworkingId, membershipId, 'APPROVE');
+}
+
+export async function rejectMembership(token: string, coworkingId: number, membershipId: number): Promise<void> {
+  await decideMembership(token, coworkingId, membershipId, 'REJECT');
+}
+
+export async function approvePayRequest(token: string, coworkingId: number, payRequestId: number, comment?: string): Promise<void> {
+  await decidePayRequest(token, coworkingId, payRequestId, 'APPROVE', comment);
+}
+
+export async function rejectPayRequest(token: string, coworkingId: number, payRequestId: number, comment?: string): Promise<void> {
+  await decidePayRequest(token, coworkingId, payRequestId, 'REJECT', comment);
+}
+
+export async function getServiceRequestDetails(token: string, coworkingId: number, serviceRequestId: number): Promise<ServiceRequestDetailDto> {
+  const workspace = await getServiceRequestWorkspace(token, coworkingId, serviceRequestId);
+  return workspace.request;
+}
+
+export async function getServiceRequestMessages(token: string, coworkingId: number, serviceRequestId: number): Promise<ServiceRequestMessageDto[]> {
+  const workspace = await getServiceRequestWorkspace(token, coworkingId, serviceRequestId);
+  return workspace.messages;
+}
+
+export async function updateServiceRequestStatus(token: string, coworkingId: number, serviceRequestId: number, status: string): Promise<void> {
+  const normalized = status.trim().toUpperCase();
+  const decision = normalized === 'RESOLVED' ? 'RESOLVE' : normalized === 'REJECTED' ? 'REJECT' : 'IN_PROGRESS';
+  await decideServiceRequest(token, coworkingId, serviceRequestId, decision);
 }

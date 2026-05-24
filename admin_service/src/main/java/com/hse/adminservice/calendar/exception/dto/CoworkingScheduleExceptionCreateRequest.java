@@ -15,4 +15,5 @@ public class CoworkingScheduleExceptionCreateRequest {
     private ScheduleExceptionType type;
     @NotBlank
     private String name;
+    private String impactHash;
 }

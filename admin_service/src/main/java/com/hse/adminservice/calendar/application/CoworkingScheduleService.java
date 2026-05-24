@@ -14,8 +14,6 @@ import java.util.List;
 public interface CoworkingScheduleService {
     CoworkingScheduleResponse getSchedule(Long coworkingId);
 
-    CoworkingScheduleResponse updateSchedule(Long coworkingId, CoworkingScheduleDaysRequest request);
-
     OperationalImpactResponse previewScheduleUpdate(Long coworkingId, CoworkingScheduleDaysRequest request);
 
     OperationalImpactResponse commitScheduleUpdate(Long coworkingId, CoworkingScheduleDaysRequest request);
@@ -37,13 +35,9 @@ public interface CoworkingScheduleService {
 
     List<PlaceClosingResponse> getClosingsForFloor(Long coworkingId, Long floorId);
 
-    OperationalImpactResponse createClosing(Long coworkingId, PlaceClosingCreateRequest request);
-
     OperationalImpactResponse previewClosingCreate(Long coworkingId, PlaceClosingCreateRequest request);
 
     OperationalImpactResponse commitClosingCreate(Long coworkingId, PlaceClosingCreateRequest request);
-
-    OperationalImpactResponse closeDay(Long coworkingId, CloseDayRequest request);
 
     OperationalImpactResponse previewCloseDay(Long coworkingId, CloseDayRequest request);
 

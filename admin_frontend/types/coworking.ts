@@ -7,8 +7,12 @@ export interface Coworking {
   heroTitle?: string | null;
   heroText?: string | null;
   imageUrls: string[];
+  uploadedImageUrls?: string[];
+  uploadedImageFileIds?: string[];
   schedule: number;
   autoApproveMembership: boolean;
+  floorMapEnabled: boolean;
+  joinToken?: string | null;
   active: boolean;
   archived: boolean;
   configurationVersion: number;
@@ -24,8 +28,8 @@ export interface CreateCoworkingRequest {
   workingHoursLabel: string;
   heroTitle?: string;
   heroText?: string;
-  imageUrls: string[];
   autoApproveMembership?: boolean;
+  floorMapEnabled?: boolean;
 }
 
 export interface UpdateCoworkingRequest {
@@ -35,9 +39,16 @@ export interface UpdateCoworkingRequest {
   workingHoursLabel: string;
   heroTitle?: string;
   heroText?: string;
-  imageUrls: string[];
+  imageFileIds?: string[];
   autoApproveMembership?: boolean;
+  floorMapEnabled?: boolean;
   active?: boolean;
+}
+
+export interface CoworkingJoinLink {
+  coworkingId: number;
+  joinToken: string | null;
+  joinUrl: string | null;
 }
 
 export interface CoworkingDashboard {

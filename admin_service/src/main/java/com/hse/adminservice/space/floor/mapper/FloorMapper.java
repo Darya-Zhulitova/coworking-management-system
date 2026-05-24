@@ -12,13 +12,14 @@ public class FloorMapper {
     private final FileStorageService fileStorageService;
 
     public FloorResponse toResponse(Floor floor) {
+        String imageKey = floor.getFullImageFileId() != null ? floor.getFullImageFileId() : floor.getImageFileId();
         return FloorResponse.builder()
                 .id(floor.getId())
                 .coworkingId(floor.getCoworking().getId())
                 .name(floor.getName())
                 .index(floor.getIndex())
-                .imageFileId(floor.getImageFileId())
-                .imageUrl(fileStorageService.presignedUrl(floor.getImageFileId()))
+                .imageFileId(imageKey)
+                .imageUrl(fileStorageService.presignedUrl(imageKey))
                 .active(floor.getActive())
                 .archived(floor.getArchived())
                 .archivedAt(floor.getArchivedAt())

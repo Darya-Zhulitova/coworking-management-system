@@ -48,9 +48,8 @@ export function CoworkingMembershipQueuePageClient({ coworkingId }: { coworkingI
   if (!context || context.coworkingId == null) return <FullPageLoader label="Переход на страницу входа..."/>;
   return <main className="page-shell"><Container className="py-4 py-md-5"><Stack gap={4}><h2 className="mb-0">Очередь
     заявок на участие</h2>{message ?
-    <Alert variant="success">{message}</Alert> : null}<Card className="content-card"><Card.Body><Card.Text
-    className="text-body-secondary">Управляйте заявками и статусами
-    пользователей из единой очереди.</Card.Text><Table responsive hover className="mt-3">
+    <Alert variant="success">{message}</Alert> : null}<Card className="content-card"><Card.Body><Table responsive hover
+                                                                                                       className="mt-3">
     <thead>
     <tr>
       <th>Пользователь</th>
@@ -59,14 +58,36 @@ export function CoworkingMembershipQueuePageClient({ coworkingId }: { coworkingI
       <th>Действия</th>
     </tr>
     </thead>
-    <tbody>{items.map((item) => <tr key={item.membershipId}>
-      <td>{item.userName}</td>
-      <td>{formatMembershipStatus(item.status)}</td>
-      <td>{item.createdAt}</td>
-      <td>{canEdit && item.status === 'pending' ? <Stack direction="horizontal" gap={2}><Button size="sm"
-                                                                                                onClick={() => act(item.membershipId, 'approve')}>Подтвердить</Button><Button
-        size="sm" variant="outline-danger"
-        onClick={() => act(item.membershipId, 'reject')}>Отклонить</Button></Stack> : '—'}</td>
-    </tr>)}</tbody>
+    <tbody>
+    {items
+      .filter((item) => item.status === 'pending')
+      .map((item) => (
+        <tr key={item.membershipId}>
+          <td>{item.userName}</td>
+          <td>{formatMembershipStatus(item.status)}</td>
+          <td>{item.createdAt}</td>
+          <td>
+            {canEdit && item.status === 'pending' ? (
+              <Stack direction="horizontal" gap={2}>
+                <Button
+                  size="sm"
+                  onClick={() => act(item.membershipId, 'approve')}
+                >
+                  Подтвердить
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant="outline-danger"
+                  onClick={() => act(item.membershipId, 'reject')}
+                >
+                  Отклонить
+                </Button>
+              </Stack>
+            ) : '—'}
+          </td>
+        </tr>
+      ))}
+    </tbody>
   </Table></Card.Body></Card></Stack></Container></main>;
 }

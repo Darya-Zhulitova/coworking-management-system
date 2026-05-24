@@ -1,14 +1,11 @@
 package com.hse.adminservice.pricing.tariff.domain;
 
 import com.hse.adminservice.coworking.domain.Coworking;
-import com.hse.adminservice.pricing.discount.domain.TariffDiscountRule;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(
@@ -35,10 +32,7 @@ public class Tariff {
     private String name;
 
     @Column(name = "price_per_day", nullable = false)
-    private Integer pricePerDay;
-
-    @Column(name = "min_booking_days", nullable = false)
-    private Integer minBookingDays;
+    private Long pricePerDay;
 
     @Column(name = "full_refund_hours_before", nullable = false)
     private Integer fullRefundHoursBefore;
@@ -54,10 +48,6 @@ public class Tariff {
 
     @Column(name = "membership_block_compensation_coefficient", nullable = false, precision = 10, scale = 4)
     private BigDecimal membershipBlockCompensationCoefficient;
-
-    @OneToMany(mappedBy = "tariff", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<TariffDiscountRule> discountRules = new ArrayList<>();
 
     @Column(name = "tariff_version", nullable = false)
     private Integer version;

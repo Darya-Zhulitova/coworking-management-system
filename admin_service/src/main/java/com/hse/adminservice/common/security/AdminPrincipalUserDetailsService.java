@@ -27,6 +27,6 @@ public class AdminPrincipalUserDetailsService implements UserDetailsService {
                         true,
                         List.of()
                 ))
-                .orElseThrow(() -> new UsernameNotFoundException("Admin subject not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("Администратор не найден"));
     }
 }

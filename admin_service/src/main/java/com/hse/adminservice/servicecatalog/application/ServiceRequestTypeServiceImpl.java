@@ -38,13 +38,13 @@ public class ServiceRequestTypeServiceImpl implements ServiceRequestTypeService 
     public ServiceRequestTypeResponse create(Long coworkingId, ServiceRequestTypeCreateRequest request) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.SERVICE_REQUEST_TYPE_EDIT);
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
         String normalizedName = request.getName().trim();
         if (serviceRequestTypeRepository.existsByCoworkingIdAndNameIgnoreCaseAndArchivedFalse(
                 coworkingId,
                 normalizedName
         )) {
-            throw new ConflictException("Service request type name must be unique within coworking");
+            throw new ConflictException("Название типа сервисной заявки должно быть уникальным в рамках коворкинга");
         }
         LocalDateTime now = timeProvider.now();
         ServiceRequestType entity = serviceRequestTypeRepository.save(ServiceRequestType.builder()
@@ -90,7 +90,7 @@ public class ServiceRequestTypeServiceImpl implements ServiceRequestTypeService 
                 .equalsIgnoreCase(normalizedName) && serviceRequestTypeRepository.existsByCoworkingIdAndNameIgnoreCaseAndArchivedFalse(coworkingId,
                 normalizedName
         )) {
-            throw new ConflictException("Service request type name must be unique within coworking");
+            throw new ConflictException("Название типа сервисной заявки должно быть уникальным в рамках коворкинга");
         }
         entity.setName(normalizedName);
         entity.setCost(request.getCost());
@@ -120,6 +120,6 @@ public class ServiceRequestTypeServiceImpl implements ServiceRequestTypeService 
 
     private ServiceRequestType getExistingType(Long coworkingId, Long serviceRequestTypeId) {
         return serviceRequestTypeRepository.findByIdAndCoworkingIdAndArchivedFalse(serviceRequestTypeId, coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Service request type not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Тип сервисной заявки не найден"));
     }
 }

@@ -35,9 +35,11 @@ public class Coworking {
     @Column(length = 2000)
     private String heroText;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String imageUrlsJson;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String imageFileIdsJson;
 
     @Column(nullable = false)
     private Integer schedule;
@@ -47,6 +49,12 @@ public class Coworking {
 
     @Column(name = "auto_approve_membership", nullable = false)
     private Boolean autoApproveMembership;
+
+    @Column(name = "floor_map_enabled")
+    private Boolean floorMapEnabled;
+
+    @Column(name = "join_token", unique = true, length = 36)
+    private String joinToken;
 
     @Column(name = "is_active", nullable = false)
     private Boolean active;

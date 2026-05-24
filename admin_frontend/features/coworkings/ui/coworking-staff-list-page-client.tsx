@@ -25,12 +25,12 @@ export function CoworkingStaffListPageClient({ coworkingId }: { coworkingId: num
     redirectToLogin: true
   });
   const [accessList, setAccessList] = useState<CoworkingAccessItem[]>([]);
-  const [roles, setРольs] = useState<CoworkingRoleDefinition[]>([]);
+  const [roles, setRoles] = useState<CoworkingRoleDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [formEmail, setFormEmail] = useState('');
-  const [formРольId, setFormРольId] = useState<number | ''>('');
+  const [formRoleId, setFormRoleId] = useState<number | ''>('');
   const [savingAccessId, setSavingAccessId] = useState<number | null>(null);
   const canManageAccess = context?.grants.includes('ACCESS_EDIT') ?? false;
 
@@ -42,9 +42,9 @@ export function CoworkingStaffListPageClient({ coworkingId }: { coworkingId: num
     ]).then(([staffData, roleData]) => {
       if (!isMounted) return;
       setAccessList(staffData);
-      setРольs(roleData);
-      const activeРольs = roleData.filter((role) => role.active);
-      if (activeРольs[0]) setFormРольId(activeРольs[0].roleId);
+      setRoles(roleData);
+      const activeRoles = roleData.filter((role) => role.active);
+      if (activeRoles[0]) setFormRoleId(activeRoles[0].roleId);
     }).catch((error) => {
       if (isMounted) setErrorMessage(error instanceof Error ? error.message : 'Не удалось загрузить список доступов.');
     }).finally(() => {
@@ -65,11 +65,11 @@ export function CoworkingStaffListPageClient({ coworkingId }: { coworkingId: num
       await requestJson(`/api/coworkings/${coworkingId}/staff`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formEmail.trim(), roleId: formРольId })
+        body: JSON.stringify({ email: formEmail.trim(), roleId: formRoleId })
       });
       setFormEmail('');
       await reloadStaff();
-      setSubmitMessage('Access assigned.');
+      setSubmitMessage('Доступ назначен.');
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : 'Не удалось выдать доступ.');
     }
@@ -118,8 +118,8 @@ export function CoworkingStaffListPageClient({ coworkingId }: { coworkingId: num
     сотруднику</CardTitle>{canManageAccess ?
     <Form onSubmit={handleAssign}><Stack gap={3}><Form.Group><Form.Label>Email администратора</Form.Label><Form.Control
       value={formEmail} onChange={(e) => setFormEmail(e.target.value)}
-      required/></Form.Group><Form.Group><Form.Label>Роль</Form.Label><Form.Select value={formРольId}
-                                                                                   onChange={(e) => setFormРольId(Number(e.target.value))}
+      required/></Form.Group><Form.Group><Form.Label>Роль</Form.Label><Form.Select value={formRoleId}
+                                                                                   onChange={(e) => setFormRoleId(Number(e.target.value))}
                                                                                    required>{roles.filter((role) => role.active).map((role) =>
       <option key={role.roleId} value={role.roleId}>{role.name}</option>)}</Form.Select></Form.Group><Button
       type="submit">Выдать доступ</Button></Stack></Form> :

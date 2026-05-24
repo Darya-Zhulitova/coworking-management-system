@@ -9,18 +9,18 @@ function parseId(value: string): number | null {
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string; placeTypeId: string }> }) {
   const session = await getAdminSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  if (!session) return NextResponse.json({ message: 'Необходимо войти в систему.' }, { status: 401 });
   const { id, placeTypeId: placeTypeIdRaw } = await params;
   const coworkingId = parseId(id);
   const placeTypeId = parseId(placeTypeIdRaw);
-  if (coworkingId == null || placeTypeId == null) return NextResponse.json({ message: 'Invalid place type path.' }, { status: 400 });
+  if (coworkingId == null || placeTypeId == null) return NextResponse.json({ message: 'Некорректный идентификатор типа места.' }, { status: 400 });
   let payload: { name?: string; active?: boolean };
   try {
     payload = await request.json() as { name?: string; active?: boolean };
   } catch {
-    return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
+    return NextResponse.json({ message: 'Некорректное тело запроса.' }, { status: 400 });
   }
-  if (!payload.name?.trim()) return NextResponse.json({ message: 'Name is required.' }, { status: 400 });
+  if (!payload.name?.trim()) return NextResponse.json({ message: 'Укажите название.' }, { status: 400 });
   try {
     return NextResponse.json(await updatePlaceType(session.token, coworkingId, placeTypeId, {
       name: payload.name.trim(),
@@ -28,22 +28,22 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }));
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    return NextResponse.json({ message: 'Unable to update place type.' }, { status: 500 });
+    return NextResponse.json({ message: 'Не удалось обновить тип места.' }, { status: 500 });
   }
 }
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string; placeTypeId: string }> }) {
   const session = await getAdminSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  if (!session) return NextResponse.json({ message: 'Необходимо войти в систему.' }, { status: 401 });
   const { id, placeTypeId: placeTypeIdRaw } = await params;
   const coworkingId = parseId(id);
   const placeTypeId = parseId(placeTypeIdRaw);
-  if (coworkingId == null || placeTypeId == null) return NextResponse.json({ message: 'Invalid place type path.' }, { status: 400 });
+  if (coworkingId == null || placeTypeId == null) return NextResponse.json({ message: 'Некорректный идентификатор типа места.' }, { status: 400 });
   try {
     await archivePlaceType(session.token, coworkingId, placeTypeId);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    return NextResponse.json({ message: 'Unable to archive place type.' }, { status: 500 });
+    return NextResponse.json({ message: 'Не удалось архивировать тип места.' }, { status: 500 });
   }
 }

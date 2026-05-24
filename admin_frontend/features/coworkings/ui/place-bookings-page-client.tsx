@@ -1,17 +1,20 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
 import Container from 'react-bootstrap/Container';
+import Modal from 'react-bootstrap/Modal';
 import Stack from 'react-bootstrap/Stack';
 import Table from 'react-bootstrap/Table';
 import { FullPageError, FullPageLoader } from '@/components/page-state';
 import { useAppContext } from '@/features/context/use-app-context';
 import { requestJson } from '@/lib/client/api';
 import { formatRublesFromKopecks } from '@/lib/format/money';
-import type { PlaceBookingListResponseDto, PlaceDto } from '@/types/place';
+import { OperationalImpactPreview } from '@/features/coworkings/ui/operational-impact-preview';
+import type { OperationalImpactDto, PlaceBookingListResponseDto, PlaceDto } from '@/types/place';
 
 function formatBookingDate(value: string): string {
   if (!value) return '—';
@@ -21,14 +24,23 @@ function formatBookingDate(value: string): string {
 function formatBookingStatus(booking: { status: string; active: boolean }): string {
   if (!booking.active) return 'Неактивна';
   const labels: Record<string, string> = {
+    ACTUAL: 'Активна',
     active: 'Активна',
     ACTIVE: 'Активна',
     canceled: 'Отменена',
     CANCELED: 'Отменена',
+    CANCELED_USER: 'Отменена пользователем',
     CANCELED_ADMIN: 'Отменена администратором',
   };
   return labels[booking.status] ?? booking.status;
 }
+
+type PendingClosing = {
+  bookingId: number;
+  date: string;
+  payload: { placeId: number; date: string; name: string };
+  impactHash: string;
+};
 
 export function PlaceBookingsPageClient({ coworkingId, floorId, placeId }: {
   coworkingId: number;
@@ -43,6 +55,11 @@ export function PlaceBookingsPageClient({ coworkingId, floorId, placeId }: {
   const [bookingData, setBookingData] = useState<PlaceBookingListResponseDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [impact, setImpact] = useState<OperationalImpactDto | null>(null);
+  const [pendingClosing, setPendingClosing] = useState<PendingClosing | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   const bookings = useMemo(() => bookingData?.bookings ?? [], [bookingData]);
 
@@ -68,6 +85,49 @@ export function PlaceBookingsPageClient({ coworkingId, floorId, placeId }: {
       mounted = false;
     };
   }, [load]);
+
+  async function openCancelModal(booking: { bookingId: number; date: string }) {
+    setActionError(null);
+    setActionMessage(null);
+    const payload = {
+      placeId,
+      date: formatBookingDate(booking.date),
+      name: `Отмена бронирования ${booking.bookingNumber ?? booking.bookingId}`,
+    };
+    try {
+      const preview = await requestJson<OperationalImpactDto>(`/api/coworkings/${coworkingId}/schedule/closings/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      setImpact(preview);
+      setPendingClosing({ bookingId: booking.bookingId, date: payload.date, payload, impactHash: preview.impactHash });
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Не удалось рассчитать влияние закрытия места.');
+    }
+  }
+
+  async function confirmCancelThroughClosing() {
+    if (!pendingClosing) return;
+    setConfirming(true);
+    setActionError(null);
+    setActionMessage(null);
+    try {
+      const committed = await requestJson<OperationalImpactDto>(`/api/coworkings/${coworkingId}/schedule/closings/commit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...pendingClosing.payload, impactHash: pendingClosing.impactHash }),
+      });
+      setImpact(committed);
+      await load();
+      setPendingClosing(null);
+      setActionMessage(`Создано исключение места. Отменено бронирований: ${committed.affectedBookingsCount}.`);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Не удалось отменить бронь через исключение места.');
+    } finally {
+      setConfirming(false);
+    }
+  }
 
   if (isContextLoading || isLoading) return <FullPageLoader label="Загрузка бронирований места..."/>;
   if (contextError) return <FullPageError message={contextError}/>;
@@ -99,6 +159,10 @@ export function PlaceBookingsPageClient({ coworkingId, floorId, placeId }: {
               <Card.Title as="h2" className="h4 mb-0">Бронирования места</Card.Title>
               <Badge bg="secondary">{bookings.length}</Badge>
             </Stack>
+            {actionMessage ? <Alert variant="success" dismissible
+                                    onClose={() => setActionMessage(null)}>{actionMessage}</Alert> : null}
+            {actionError ?
+              <Alert variant="danger" dismissible onClose={() => setActionError(null)}>{actionError}</Alert> : null}
             <Table responsive hover>
               <thead>
               <tr>
@@ -107,20 +171,29 @@ export function PlaceBookingsPageClient({ coworkingId, floorId, placeId }: {
                 <th>Дата</th>
                 <th>Сумма</th>
                 <th>Статус</th>
+                <th className="text-end">Действия</th>
               </tr>
               </thead>
               <tbody>
               {bookings.length === 0 ? <tr>
-                <td colSpan={5} className="text-center text-body-secondary py-4">Для этого места пока нет данных о
+                <td colSpan={6} className="text-center text-body-secondary py-4">Для этого места пока нет данных о
                   бронированиях.
                 </td>
-              </tr> : bookings.map((booking) => <tr key={booking.bookingId}>
-                <td>#{booking.bookingId}</td>
-                <td>{booking.userName}<br/><span
-                  className="text-body-secondary">membership #{booking.membershipId}</span></td>
+              </tr> : bookings.map((booking) => <tr key={booking.bookingNumber ?? booking.bookingId}>
+                <td>{booking.bookingNumber ?? `#${booking.bookingId}`}</td>
+                <td>{booking.userName}</td>
                 <td>{formatBookingDate(booking.date)}</td>
                 <td>{formatRublesFromKopecks(booking.cost)}</td>
                 <td><Badge bg={booking.active ? 'success' : 'secondary'}>{formatBookingStatus(booking)}</Badge></td>
+                <td className="text-end">
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    disabled={!booking.active || confirming}
+                    onClick={() => void openCancelModal(booking)}>
+                    Отменить через исключение
+                  </Button>
+                </td>
               </tr>)}
               </tbody>
             </Table>
@@ -128,5 +201,19 @@ export function PlaceBookingsPageClient({ coworkingId, floorId, placeId }: {
         </Card>
       </Stack>
     </Container>
+
+    <Modal show={pendingClosing != null} onHide={() => !confirming && setPendingClosing(null)} size="xl" centered>
+      <Modal.Header closeButton><Modal.Title>Подтвердить отмену брони через закрытие места</Modal.Title></Modal.Header>
+      <Modal.Body>{impact ? <OperationalImpactPreview
+        impact={impact}
+        description={`После подтверждения будет создано закрытие места на ${pendingClosing?.date ?? 'выбранную дату'}. Затронутые бронирования будут отменены, компенсации начислятся автоматически.`}
+      /> : null}</Modal.Body>
+      <Modal.Footer>
+        <Button variant="outline-secondary" onClick={() => setPendingClosing(null)}
+                disabled={confirming}>Отмена</Button>
+        <Button variant="danger" onClick={confirmCancelThroughClosing}
+                disabled={confirming}>{confirming ? 'Выполняется...' : 'Подтвердить'}</Button>
+      </Modal.Footer>
+    </Modal>
   </main>;
 }

@@ -6,6 +6,8 @@ import com.hse.adminservice.common.time.TimeProvider;
 import com.hse.adminservice.coworking.application.CoworkingConfigurationVersionService;
 import com.hse.adminservice.coworking.domain.Coworking;
 import com.hse.adminservice.coworking.persistence.CoworkingRepository;
+import com.hse.adminservice.images.ImageFileKeys;
+import com.hse.adminservice.images.ImageStorageService;
 import com.hse.adminservice.rbac.authorization.AdminAuthorizationService;
 import com.hse.adminservice.rbac.domain.Grant;
 import com.hse.adminservice.space.floor.domain.Floor;
@@ -22,6 +24,7 @@ import com.hse.adminservice.space.placetype.persistence.PlaceTypeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 
@@ -38,16 +41,17 @@ public class PlaceCommandService {
     private final CoworkingConfigurationVersionService configurationVersionService;
     private final PlaceActivationValidator placeActivationValidator;
     private final TimeProvider timeProvider;
+    private final ImageStorageService imageStorageService;
 
     @Transactional
     public PlaceResponse create(Long coworkingId, PlaceCreateRequest request) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_EDIT);
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
         Floor floor = getActiveFloor(coworkingId, request.floorId());
         PlaceType placeType = getActiveType(coworkingId, request.placeTypeId());
         if (placeRepository.existsByFloorIdAndNameAndArchivedFalse(floor.getId(), request.name().trim())) {
-            throw new ConflictException("Place name must be unique within floor");
+            throw new ConflictException("Название места должно быть уникальным в рамках этажа");
         }
         validateCoordinates(request.locX(), request.locY());
         LocalDateTime now = timeProvider.now();
@@ -58,6 +62,8 @@ public class PlaceCommandService {
                 .coworking(coworking)
                 .locX(request.locX())
                 .locY(request.locY())
+                .imageFileId(normalizeImageFileId(request.imageFileId()))
+                .fullImageFileId(normalizeImageFileId(request.imageFileId()))
                 .amenitiesRaw(placeMapper.serializeAmenities(request.amenities()))
                 .active(true)
                 .archived(false)
@@ -76,7 +82,7 @@ public class PlaceCommandService {
         if (!place.getName().equalsIgnoreCase(normalizedName) && placeRepository.existsByFloorIdAndNameAndArchivedFalse(place.getFloor().getId(),
                 normalizedName
         )) {
-            throw new ConflictException("Place name must be unique within floor");
+            throw new ConflictException("Название места должно быть уникальным в рамках этажа");
         }
         validateCoordinates(request.locX(), request.locY());
         place.setName(normalizedName);
@@ -86,6 +92,20 @@ public class PlaceCommandService {
         if (request.active() != null) {
             place.setActive(request.active());
         }
+        place.setUpdatedAt(timeProvider.now());
+        Place saved = placeRepository.save(place);
+        configurationVersionService.bumpVersion(coworkingId);
+        return placeMapper.toResponse(saved);
+    }
+
+    @Transactional
+    public PlaceResponse uploadPhoto(Long coworkingId, Long placeId, MultipartFile file) {
+        authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_EDIT);
+        Place place = getExistingPlace(coworkingId, placeId);
+        ImageFileKeys image = imageStorageService.uploadPlacePhoto(placeId, file);
+        place.setImageFileId(image.fullKey());
+        place.setPreviewImageFileId(image.previewKey());
+        place.setFullImageFileId(image.fullKey());
         place.setUpdatedAt(timeProvider.now());
         Place saved = placeRepository.save(place);
         configurationVersionService.bumpVersion(coworkingId);
@@ -117,31 +137,35 @@ public class PlaceCommandService {
         configurationVersionService.bumpVersion(coworkingId);
     }
 
+    private String normalizeImageFileId(String imageFileId) {
+        return imageFileId == null || imageFileId.isBlank() ? null : imageFileId.trim();
+    }
+
     private void validateCoordinates(Object locX, Object locY) {
         if ((locX == null) != (locY == null)) {
-            throw new ConflictException("Both locX and locY must be set or both must be empty");
+            throw new ConflictException("Координаты X и Y должны быть заполнены вместе или оставлены пустыми вместе");
         }
     }
 
     private Place getExistingPlace(Long coworkingId, Long placeId) {
         return placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Place not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Место не найдено"));
     }
 
     private Floor getActiveFloor(Long coworkingId, Long floorId) {
         Floor floor = floorRepository.findByIdAndCoworkingIdAndArchivedFalse(floorId, coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Floor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Этаж не найден"));
         if (!Boolean.TRUE.equals(floor.getActive())) {
-            throw new ConflictException("Floor must be active");
+            throw new ConflictException("Этаж должен быть активным");
         }
         return floor;
     }
 
     private PlaceType getActiveType(Long coworkingId, Long placeTypeId) {
         PlaceType placeType = placeTypeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeTypeId, coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Place type not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Тип места не найден"));
         if (!Boolean.TRUE.equals(placeType.getActive())) {
-            throw new ConflictException("Place type must be active");
+            throw new ConflictException("Тип места должен быть активным");
         }
         return placeType;
     }

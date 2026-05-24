@@ -15,6 +15,7 @@ public record CoworkingPublicInfoResponse(
         String heroText,
         List<String> imageUrls,
         Boolean autoApproveMembership,
+        Boolean floorMapEnabled,
         Boolean active
 ) {
 }

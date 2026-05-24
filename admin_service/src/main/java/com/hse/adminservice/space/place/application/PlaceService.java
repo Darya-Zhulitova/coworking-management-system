@@ -5,6 +5,7 @@ import com.hse.adminservice.operations.bookingimpact.dto.OperationalImpactRespon
 import com.hse.adminservice.space.place.dto.PlaceCreateRequest;
 import com.hse.adminservice.space.place.dto.PlaceResponse;
 import com.hse.adminservice.space.place.dto.PlaceUpdateRequest;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -19,9 +20,11 @@ public interface PlaceService {
 
     PlaceResponse update(Long coworkingId, Long placeId, PlaceUpdateRequest request);
 
+    PlaceResponse uploadPhoto(Long coworkingId, Long placeId, MultipartFile file);
+
     OperationalImpactResponse previewDeactivate(Long coworkingId, Long placeId);
 
-    OperationalImpactResponse commitDeactivate(Long coworkingId, Long placeId);
+    OperationalImpactResponse commitDeactivate(Long coworkingId, Long placeId, String impactHash);
 
     PlaceResponse activate(Long coworkingId, Long placeId);
 

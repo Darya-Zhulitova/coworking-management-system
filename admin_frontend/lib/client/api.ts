@@ -19,7 +19,7 @@ export async function requestJson<T>(input: string, init?: RequestInit): Promise
   if (!response.ok) {
     const message = data && typeof data === 'object' && 'message' in data && typeof data.message === 'string'
       ? data.message
-      : 'Request failed.';
+      : 'Запрос не выполнен.';
     throw new ClientRequestError(message, response.status);
   }
 

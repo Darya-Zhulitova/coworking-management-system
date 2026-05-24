@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -42,6 +43,11 @@ public class CoworkingController {
     @PutMapping("/{id}")
     public CoworkingResponse update(@PathVariable Long id, @Valid @RequestBody CoworkingUpdateRequest request) {
         return coworkingService.update(id, request);
+    }
+
+    @PostMapping("/{id}/photos")
+    public CoworkingResponse uploadPhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        return coworkingService.uploadPhoto(id, file);
     }
 
     @DeleteMapping("/{id}")

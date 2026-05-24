@@ -93,7 +93,8 @@ export function FloorPlanEditor({
   );
   const placedPlaces = localPlaces.filter(isPlaced);
   const unplacedPlaces = localPlaces.filter((place) => !isPlaced(place));
-  const hasPlan = Boolean(floor.imageUrl || floor.imageFileId);
+  const floorPlanUrl = floor.imageUrl ?? null;
+  const hasPlan = Boolean(floorPlanUrl || floor.imageFileId);
 
   async function uploadPlan(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -203,6 +204,7 @@ export function FloorPlanEditor({
           <Col md={8}>
             <Form.Label>Изображение плана этажа</Form.Label>
             <Form.Control name="file" type="file" accept="image/png,image/jpeg,image/webp"/>
+            <Form.Text>JPG, PNG или WEBP, до 10 МБ. Карта отображается в формате 16:9.</Form.Text>
           </Col>
           <Col md={4}>
             <Button type="submit" disabled={isUploading} className="w-100">
@@ -220,9 +222,11 @@ export function FloorPlanEditor({
             ref={mapRef}
             role="presentation"
             className="position-relative border rounded overflow-hidden bg-light floor-plan-map"
+            style={{ aspectRatio: '16 / 9' }}
             onPointerDown={placeSelectedAt}
           >
-            <img src={floor.imageUrl ?? ''} alt={`План этажа ${floor.name}`} className="d-block w-100"/>
+            <img src={floorPlanUrl ?? ''} alt={`План этажа ${floor.name}`} className="d-block w-100 h-100"
+                 style={{ objectFit: 'contain' }}/>
             {placedPlaces.map((place) => <button
               key={place.id}
               type="button"
@@ -240,13 +244,13 @@ export function FloorPlanEditor({
             >{place.name}</button>)}
           </div>
           <div className="text-body-secondary small mt-2">
-            Выберите неразмещённое место и кликните по плану. Уже размещённые места можно перетаскивать мышью.
+            Выберите неразмещенное место и кликните по плану. Уже размещенные места можно перетаскивать.
           </div>
         </Col>
         <Col lg={4}>
           <Stack gap={3}>
             <div>
-              <h3 className="h6">Неразмещённые места</h3>
+              <h3 className="h6">Неразмещенные места</h3>
               {unplacedPlaces.length === 0 ? <p className="text-body-secondary small mb-0">Все места размещены.</p> :
                 <Stack gap={2}>{unplacedPlaces.map((place) => <Button
                   key={place.id}
@@ -258,7 +262,7 @@ export function FloorPlanEditor({
                 >{place.name}</Button>)}</Stack>}
             </div>
             <div>
-              <h3 className="h6">Размещённые места</h3>
+              <h3 className="h6">Размещенные места</h3>
               {placedPlaces.length === 0 ? <p className="text-body-secondary small mb-0">На плане пока нет мест.</p> :
                 <Table responsive size="sm" className="align-middle mb-0">
                   <tbody>{placedPlaces.map((place) => <tr key={place.id}>

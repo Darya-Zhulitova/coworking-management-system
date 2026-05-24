@@ -12,7 +12,7 @@ public record ServiceRequestQueueItemResponse(
         String userName,
         String typeName,
         String name,
-        Integer cost,
+        Long cost,
         String status,
         LocalDate createdAt
 ) {

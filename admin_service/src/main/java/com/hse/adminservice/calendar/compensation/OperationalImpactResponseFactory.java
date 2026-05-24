@@ -17,17 +17,11 @@ public class OperationalImpactResponseFactory {
             String mode
     ) {
         return OperationalImpactResponse.builder()
-                .operationType(operationType)
-                .targetType(targetType)
-                .targetId(targetId)
-                .targetName(targetName)
-                .simulatedAffectedFutureBookings(0)
-                .plannedUserDomainCommands(List.of())
+                .affectedBookingsCount(0)
                 .affectedDates(date == null ? List.of() : List.of(date.toString()))
                 .affectedBookings(List.of())
-                .totalCompensationAmount(0)
-                .mode(mode)
-                .summary("Нет затронутых будущих бронирований.")
+                .totalCompensationAmount(0L)
+                .impactHash("NO_IMPACT")
                 .build();
     }
 }

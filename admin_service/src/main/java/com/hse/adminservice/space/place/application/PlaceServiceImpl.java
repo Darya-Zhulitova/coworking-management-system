@@ -8,6 +8,7 @@ import com.hse.adminservice.space.place.dto.PlaceUpdateRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -47,14 +48,20 @@ public class PlaceServiceImpl implements PlaceService {
     }
 
     @Override
+    @Transactional
+    public PlaceResponse uploadPhoto(Long coworkingId, Long placeId, MultipartFile file) {
+        return placeCommandService.uploadPhoto(coworkingId, placeId, file);
+    }
+
+    @Override
     public OperationalImpactResponse previewDeactivate(Long coworkingId, Long placeId) {
         return placeDeactivationService.previewDeactivate(coworkingId, placeId);
     }
 
     @Override
     @Transactional
-    public OperationalImpactResponse commitDeactivate(Long coworkingId, Long placeId) {
-        return placeDeactivationService.commitDeactivate(coworkingId, placeId);
+    public OperationalImpactResponse commitDeactivate(Long coworkingId, Long placeId, String impactHash) {
+        return placeDeactivationService.commitDeactivate(coworkingId, placeId, impactHash);
     }
 
     @Override

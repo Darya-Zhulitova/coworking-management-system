@@ -8,10 +8,10 @@ import org.springframework.stereotype.Component;
 public class PlaceActivationValidator {
     public void validateCanActivate(Place place) {
         if (!Boolean.TRUE.equals(place.getPlaceType().getActive())) {
-            throw new ConflictException("Cannot activate place while its place type is inactive");
+            throw new ConflictException("Нельзя активировать место, пока его тип неактивен");
         }
         if (!Boolean.TRUE.equals(place.getFloor().getActive())) {
-            throw new ConflictException("Cannot activate place while its floor is inactive");
+            throw new ConflictException("Нельзя активировать место, пока этаж неактивен");
         }
     }
 }

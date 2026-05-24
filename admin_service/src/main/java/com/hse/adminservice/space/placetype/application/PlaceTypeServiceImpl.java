@@ -42,15 +42,15 @@ public class PlaceTypeServiceImpl implements PlaceTypeService {
     public PlaceTypeResponse create(Long coworkingId, PlaceTypeCreateRequest request) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_TYPE_EDIT);
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
         String normalizedName = request.name().trim();
         if (placeTypeRepository.existsByCoworkingIdAndNameIgnoreCaseAndArchivedFalse(coworkingId, normalizedName)) {
-            throw new ConflictException("Place type name must be unique within coworking");
+            throw new ConflictException("Название типа места должно быть уникальным в рамках коворкинга");
         }
         Tariff tariff = tariffRepository.findByIdAndCoworkingIdAndArchivedFalse(request.tariffId(), coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tariff not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Тариф не найден"));
         if (!Boolean.TRUE.equals(tariff.getActive())) {
-            throw new ConflictException("Tariff must be active");
+            throw new ConflictException("Тариф должен быть активным");
         }
         LocalDateTime now = timeProvider.now();
         PlaceType placeType = placeTypeRepository.save(PlaceType.builder().coworking(coworking).tariff(tariff).name(
@@ -82,7 +82,7 @@ public class PlaceTypeServiceImpl implements PlaceTypeService {
                 .equalsIgnoreCase(normalizedName) && placeTypeRepository.existsByCoworkingIdAndNameIgnoreCaseAndArchivedFalse(coworkingId,
                 normalizedName
         )) {
-            throw new ConflictException("Place type name must be unique within coworking");
+            throw new ConflictException("Название типа места должно быть уникальным в рамках коворкинга");
         }
         placeType.setName(normalizedName);
         if (request.active() != null) {
@@ -100,7 +100,7 @@ public class PlaceTypeServiceImpl implements PlaceTypeService {
         authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_TYPE_EDIT);
         PlaceType placeType = getExistingType(coworkingId, placeTypeId);
         if (placeRepository.existsByCoworkingIdAndPlaceTypeIdAndArchivedFalse(coworkingId, placeTypeId)) {
-            throw new ConflictException("Cannot archive place type while non-archived places still reference it");
+            throw new ConflictException("Нельзя архивировать тип места, пока он используется активными местами");
         }
         LocalDateTime now = timeProvider.now();
         placeType.setArchived(true);
@@ -113,6 +113,6 @@ public class PlaceTypeServiceImpl implements PlaceTypeService {
 
     private PlaceType getExistingType(Long coworkingId, Long placeTypeId) {
         return placeTypeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeTypeId, coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Place type not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Тип места не найден"));
     }
 }

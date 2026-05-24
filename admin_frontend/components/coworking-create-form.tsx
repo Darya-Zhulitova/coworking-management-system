@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
-import { CoworkingImageLinksEditor } from '@/components/coworking-image-links-editor';
 
 export function CoworkingCreateForm() {
   const router = useRouter();
@@ -15,8 +14,9 @@ export function CoworkingCreateForm() {
   const [workingHoursLabel, setWorkingHoursLabel] = useState('');
   const [heroTitle, setHeroTitle] = useState('');
   const [heroText, setHeroText] = useState('');
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [autoApproveMembership, setAutoApproveMembership] = useState(false);
+  const [floorMapEnabled, setFloorMapEnabled] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -35,18 +35,35 @@ export function CoworkingCreateForm() {
           workingHoursLabel,
           heroTitle,
           heroText,
-          imageUrls,
-          autoApproveMembership
+          autoApproveMembership,
+          floorMapEnabled
         })
       });
       const data = await response.json().catch(() => null) as { id?: number; message?: string } | null;
       if (!response.ok || !data?.id) throw new Error(data?.message || 'Не удалось создать коворкинг.');
+      await uploadSelectedPhotos(data.id);
       router.push(`/coworkings/${data.id}/users`);
       router.refresh();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Не удалось создать коворкинг.');
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function uploadSelectedPhotos(coworkingId: number) {
+    for (const file of imageFiles) {
+      const formData = new FormData();
+      formData.set('file', file);
+      const response = await fetch(`/api/coworkings/${coworkingId}/photos`, {
+        method: 'POST',
+        body: formData,
+        headers: { Accept: 'application/json' }
+      });
+      const data = await response.json().catch(() => null) as { message?: string } | null;
+      if (!response.ok) {
+        throw new Error(data?.message || `Не удалось загрузить фото «${file.name}».`);
+      }
     }
   }
 
@@ -71,11 +88,24 @@ export function CoworkingCreateForm() {
         баннера</Form.Label><Form.Control as="textarea" rows={3} value={heroText}
                                           onChange={(e) => setHeroText(e.target.value)}
                                           placeholder="Необязательный текст"/></Form.Group>
-      <div className="mb-3"><CoworkingImageLinksEditor imageUrls={imageUrls} onChange={setImageUrls}
-                                                       controlIdPrefix="createCoworkingImageUrl"/></div>
+      <Form.Group className="mb-3" controlId="createCoworkingImageFiles">
+        <Form.Label>Загрузить фотографии</Form.Label>
+        <Form.Control
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          onChange={(event) => setImageFiles(Array.from(event.currentTarget.files ?? []))}
+        />
+        <Form.Text className="text-body-secondary">
+          JPG, PNG или WEBP, до 10 МБ. Изображения будут обрезаны до формата 16:9 и сохранены как JPEG.
+        </Form.Text>
+      </Form.Group>
       <Form.Check className="mb-3" type="switch" id="createCoworkingAutoApproveMembership"
                   checked={autoApproveMembership} onChange={(e) => setAutoApproveMembership(e.target.checked)}
                   label="Не требовать подтверждения для новых участников"/>
+      <Form.Check className="mb-3" type="switch" id="createCoworkingFloorMapEnabled"
+                  checked={floorMapEnabled} onChange={(e) => setFloorMapEnabled(e.target.checked)}
+                  label="Использовать карты этажей для бронирования"/>
       {errorMessage ? <Alert variant="danger">{errorMessage}</Alert> : null}
       <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Создание...' : 'Создать коворкинг'}</Button>
     </Form>

@@ -1,0 +1,21 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+    clean-disabled: false
+    locations: classpath:db/migration,classpath:db/demo
+
+app:
+  jwt:
+    secret: ${ADMIN_JWT_SECRET:apwDJG/HFraFNhiVs+jB6OiTy/iST+S6JrEM2iksXh50vHn3tihJ1lG7K7sh/4ESxYPkK8VGhYioNb2gHk9FaQ==}
+
+integration:
+  user-service:
+    base-url: ${USER_SERVICE_BASE_URL:http://localhost:8080/api}
+  user-frontend:
+    join-base-url: ${USER_FRONTEND_JOIN_BASE_URL:http://localhost:3000/join}
+  internal-api:
+    key: ${INTERNAL_API_KEY:apwDJG/HFraFNhiVs+jB6OiTy/iST+S6JrEM2iksXh50vHn3tihJ1lG7K7sh/4ESxYPkK8VGhYioNb2gHk9FaQ==}

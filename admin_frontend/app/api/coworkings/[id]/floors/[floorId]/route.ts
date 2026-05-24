@@ -9,18 +9,18 @@ function parseId(value: string): number | null {
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string; floorId: string }> }) {
   const session = await getAdminSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  if (!session) return NextResponse.json({ message: 'Необходимо войти в систему.' }, { status: 401 });
   const { id, floorId: floorIdRaw } = await params;
   const coworkingId = parseId(id);
   const floorId = parseId(floorIdRaw);
-  if (coworkingId == null || floorId == null) return NextResponse.json({ message: 'Invalid floor path.' }, { status: 400 });
+  if (coworkingId == null || floorId == null) return NextResponse.json({ message: 'Некорректный идентификатор этажа.' }, { status: 400 });
   let payload: { name?: string; imageFileId?: string; active?: boolean };
   try {
     payload = await request.json() as { name?: string; imageFileId?: string; active?: boolean };
   } catch {
-    return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
+    return NextResponse.json({ message: 'Некорректное тело запроса.' }, { status: 400 });
   }
-  if (!payload.name?.trim()) return NextResponse.json({ message: 'Name is required.' }, { status: 400 });
+  if (!payload.name?.trim()) return NextResponse.json({ message: 'Укажите название.' }, { status: 400 });
   try {
     return NextResponse.json(await updateFloor(session.token, coworkingId, floorId, {
       name: payload.name.trim(),
@@ -29,22 +29,22 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }));
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    return NextResponse.json({ message: 'Unable to update floor.' }, { status: 500 });
+    return NextResponse.json({ message: 'Не удалось обновить этаж.' }, { status: 500 });
   }
 }
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string; floorId: string }> }) {
   const session = await getAdminSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  if (!session) return NextResponse.json({ message: 'Необходимо войти в систему.' }, { status: 401 });
   const { id, floorId: floorIdRaw } = await params;
   const coworkingId = parseId(id);
   const floorId = parseId(floorIdRaw);
-  if (coworkingId == null || floorId == null) return NextResponse.json({ message: 'Invalid floor path.' }, { status: 400 });
+  if (coworkingId == null || floorId == null) return NextResponse.json({ message: 'Некорректный идентификатор этажа.' }, { status: 400 });
   try {
     await archiveFloor(session.token, coworkingId, floorId);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    return NextResponse.json({ message: 'Unable to archive floor.' }, { status: 500 });
+    return NextResponse.json({ message: 'Не удалось архивировать этаж.' }, { status: 500 });
   }
 }

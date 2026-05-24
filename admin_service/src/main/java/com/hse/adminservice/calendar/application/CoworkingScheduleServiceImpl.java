@@ -33,12 +33,6 @@ public class CoworkingScheduleServiceImpl implements CoworkingScheduleService {
     }
 
     @Override
-    @Transactional
-    public CoworkingScheduleResponse updateSchedule(Long coworkingId, CoworkingScheduleDaysRequest request) {
-        return scheduleCommandService.updateSchedule(coworkingId, request);
-    }
-
-    @Override
     public OperationalImpactResponse previewScheduleUpdate(Long coworkingId, CoworkingScheduleDaysRequest request) {
         return scheduleCommandService.previewScheduleUpdate(coworkingId, request);
     }
@@ -97,12 +91,6 @@ public class CoworkingScheduleServiceImpl implements CoworkingScheduleService {
     }
 
     @Override
-    @Transactional
-    public OperationalImpactResponse createClosing(Long coworkingId, PlaceClosingCreateRequest request) {
-        return placeClosingCommandService.createClosing(coworkingId, request);
-    }
-
-    @Override
     public OperationalImpactResponse previewClosingCreate(Long coworkingId, PlaceClosingCreateRequest request) {
         return placeClosingCommandService.previewClosingCreate(coworkingId, request);
     }
@@ -111,12 +99,6 @@ public class CoworkingScheduleServiceImpl implements CoworkingScheduleService {
     @Transactional
     public OperationalImpactResponse commitClosingCreate(Long coworkingId, PlaceClosingCreateRequest request) {
         return placeClosingCommandService.commitClosingCreate(coworkingId, request);
-    }
-
-    @Override
-    @Transactional
-    public OperationalImpactResponse closeDay(Long coworkingId, CloseDayRequest request) {
-        return closeDayCommandService.closeDay(coworkingId, request);
     }
 
     @Override

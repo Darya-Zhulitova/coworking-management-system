@@ -4,6 +4,7 @@ import com.hse.adminservice.coworking.dto.CoworkingCreateRequest;
 import com.hse.adminservice.coworking.dto.CoworkingDashboardResponse;
 import com.hse.adminservice.coworking.dto.CoworkingResponse;
 import com.hse.adminservice.coworking.dto.CoworkingUpdateRequest;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -15,6 +16,8 @@ public interface CoworkingService {
     CoworkingResponse getById(Long id);
 
     CoworkingResponse update(Long id, CoworkingUpdateRequest request);
+
+    CoworkingResponse uploadPhoto(Long id, MultipartFile file);
 
     void archive(Long id);
 

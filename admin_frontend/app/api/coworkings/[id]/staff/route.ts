@@ -9,29 +9,29 @@ function parseId(value: string): number | null {
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getAdminSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  if (!session) return NextResponse.json({ message: 'Необходимо войти в систему.' }, { status: 401 });
   const id = parseId((await params).id);
-  if (id == null) return NextResponse.json({ message: 'Invalid coworking id.' }, { status: 400 });
+  if (id == null) return NextResponse.json({ message: 'Некорректный идентификатор коворкинга.' }, { status: 400 });
   try {
     return NextResponse.json(await getCoworkingAccessList(session.token, id));
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    return NextResponse.json({ message: 'Unable to load staff access.' }, { status: 500 });
+    return NextResponse.json({ message: 'Не удалось загрузить доступы сотрудников.' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getAdminSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  if (!session) return NextResponse.json({ message: 'Необходимо войти в систему.' }, { status: 401 });
   const id = parseId((await params).id);
-  if (id == null) return NextResponse.json({ message: 'Invalid coworking id.' }, { status: 400 });
+  if (id == null) return NextResponse.json({ message: 'Некорректный идентификатор коворкинга.' }, { status: 400 });
   let payload: { email?: string; roleId?: number };
   try {
     payload = await request.json() as { email?: string; roleId?: number };
   } catch {
-    return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
+    return NextResponse.json({ message: 'Некорректное тело запроса.' }, { status: 400 });
   }
-  if (!payload.email?.trim() || !payload.roleId) return NextResponse.json({ message: 'Email and role are required.' }, { status: 400 });
+  if (!payload.email?.trim() || !payload.roleId) return NextResponse.json({ message: 'Укажите email и роль.' }, { status: 400 });
   try {
     return NextResponse.json(await assignCoworkingRole(session.token, id, {
       email: payload.email.trim(),
@@ -39,6 +39,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }), { status: 201 });
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    return NextResponse.json({ message: 'Unable to assign coworking role.' }, { status: 500 });
+    return NextResponse.json({ message: 'Не удалось назначить роль.' }, { status: 500 });
   }
 }
