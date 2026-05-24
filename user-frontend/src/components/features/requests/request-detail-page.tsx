@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ClientRequestError, requestJson } from '@/lib/client/api';
-import type { BackendBalanceDetails, BackendServiceRequest, BackendServiceRequestMessage } from '@/lib/api/backend';
+import type { BackendServiceRequest, BackendServiceRequestMessage } from '@/lib/api/backend';
 import type { MessageAuthorType, ServiceRequest } from '@/lib/types';
+import { useToast } from '@/components/ui/toast-provider';
+import { LoadingOverlay } from '@/components/ui/loading-overlay';
 
 function bubbleClass(authorType: MessageAuthorType): string {
   if (authorType === 'USER') return 'bg-primary-subtle';
@@ -17,14 +19,41 @@ function normalizeStatus(value: BackendServiceRequest['status']): ServiceRequest
   return String(value).toLowerCase() as ServiceRequest['status'];
 }
 
-export function RequestDetailPage({ coworkingId, requestId }: { coworkingId: number; requestId: number }) {
-  const [request, setRequest] = useState<ServiceRequest | null>(null);
-  const [messages, setMessages] = useState<BackendServiceRequestMessage[]>([]);
-  const [membershipStatus, setMembershipStatus] = useState<'active' | 'pending' | 'blocked' | null>(null);
+export function RequestDetailPage({
+                                    membershipId,
+                                    requestId,
+                                    initialRequest,
+                                    initialMessages,
+                                    initialMembershipStatus,
+                                    initialError = null
+                                  }: {
+  membershipId: number;
+  requestId: number;
+  initialRequest: BackendServiceRequest | null;
+  initialMessages: BackendServiceRequestMessage[];
+  initialMembershipStatus: 'active' | 'pending' | 'blocked' | null;
+  initialError?: string | null
+}) {
+  const toast = useToast();
+  const [request, setRequest] = useState<ServiceRequest | null>(initialRequest ? {
+    id: initialRequest.id,
+    membershipId: initialRequest.membershipId,
+    typeId: initialRequest.typeId,
+    name: initialRequest.name,
+    typeName: initialRequest.typeName,
+    cost: initialRequest.cost,
+    status: normalizeStatus(initialRequest.status),
+    createdAt: initialRequest.createdAt,
+    updatedAt: initialRequest.updatedAt,
+    resolvedAt: initialRequest.resolvedAt ?? undefined,
+  } : null);
+  const [messages, setMessages] = useState<BackendServiceRequestMessage[]>(initialMessages);
+  const [membershipStatus, setMembershipStatus] = useState<'active' | 'pending' | 'blocked' | null>(initialMembershipStatus);
   const [messageText, setMessageText] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [messageFile, setMessageFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
 
   const loadData = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     if (!silent) {
@@ -33,15 +62,16 @@ export function RequestDetailPage({ coworkingId, requestId }: { coworkingId: num
     }
 
     try {
-      const [requestItem, requestMessages, balance] = await Promise.all([
-        requestJson<BackendServiceRequest>(`/api/coworkings/${coworkingId}/service-requests/${requestId}`),
-        requestJson<BackendServiceRequestMessage[]>(`/api/coworkings/${coworkingId}/service-requests/${requestId}/messages`),
-        requestJson<BackendBalanceDetails>(`/api/coworkings/${coworkingId}/balance`),
+      const [requestItem, requestMessages, context] = await Promise.all([
+        requestJson<BackendServiceRequest>(`/api/memberships/${membershipId}/service-requests/${requestId}`),
+        requestJson<BackendServiceRequestMessage[]>(`/api/memberships/${membershipId}/service-requests/${requestId}/messages`),
+        requestJson<{
+          membership: { status: 'active' | 'pending' | 'blocked' | null }
+        }>(`/api/memberships/${membershipId}/context`),
       ]);
 
       setRequest({
         id: requestItem.id,
-        coworkingId: requestItem.coworkingId,
         membershipId: requestItem.membershipId,
         typeId: requestItem.typeId,
         name: requestItem.name,
@@ -53,22 +83,20 @@ export function RequestDetailPage({ coworkingId, requestId }: { coworkingId: num
         resolvedAt: requestItem.resolvedAt ?? undefined,
       });
       setMessages(requestMessages);
-      setMembershipStatus(String(balance.membershipStatus).toLowerCase() as 'active' | 'pending' | 'blocked');
+      setMembershipStatus(context.membership.status);
       setError(null);
     } catch (err: unknown) {
       if (!silent) {
-        setError(err instanceof ClientRequestError ? err.message : 'Не удалось загрузить заявку.');
+        setError(err instanceof ClientRequestError ? err.message : 'Не удалось загрузить сервисную заявку.');
       }
     } finally {
       if (!silent) {
         setLoading(false);
       }
     }
-  }, [coworkingId, requestId]);
+  }, [membershipId, requestId]);
 
   useEffect(() => {
-    void loadData();
-
     const refreshIntervalId = window.setInterval(() => {
       void loadData({ silent: true });
     }, 5000);
@@ -82,28 +110,35 @@ export function RequestDetailPage({ coworkingId, requestId }: { coworkingId: num
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!canReply || !messageText.trim()) return;
+    if (!canReply || (!messageText.trim() && !messageFile)) return;
 
     setSubmitting(true);
     setError(null);
     try {
-      const created = await requestJson<BackendServiceRequestMessage>(`/api/service-requests/${requestId}/messages`, {
+      const formData = new FormData();
+      if (messageText.trim()) formData.set('text', messageText.trim());
+      if (messageFile) formData.set('file', messageFile);
+      const created = await requestJson<BackendServiceRequestMessage>(`/api/memberships/${membershipId}/service-requests/${requestId}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coworkingId, text: messageText.trim() }),
+        body: formData,
       });
       setMessages((current) => [...current, created]);
       setMessageText('');
+      setMessageFile(null);
+      toast.success('Сообщение отправлено.');
     } catch (err: unknown) {
-      setError(err instanceof ClientRequestError ? err.message : 'Не удалось отправить сообщение.');
+      toast.error(err instanceof ClientRequestError ? err.message : 'Не удалось отправить сообщение.');
     } finally {
       setSubmitting(false);
     }
   }
 
-  if (loading) return <div className="alert alert-light border mb-0">Загрузка заявки...</div>;
-  if (error && !request) return <div className="alert alert-danger mb-0">{error}</div>;
-  if (!request) return <div className="alert alert-warning mb-0">Заявка не найдена.</div>;
+  if (loading) return <LoadingOverlay message="Загрузка данных..." ariaLabel="Загрузка данных"/>;
+  if (error && !request) return <div
+    className="border rounded-4 border-danger-subtle bg-danger-subtle text-danger-emphasis p-3 mb-0">{error}</div>;
+  if (!request) return <div
+    className="border rounded-4 border-warning-subtle bg-warning-subtle text-warning-emphasis p-3 mb-0">Сервисная заявка
+    не найдена.</div>;
 
   return (
     <div className="row g-4">
@@ -125,7 +160,9 @@ export function RequestDetailPage({ coworkingId, requestId }: { coworkingId: num
               <div className="border rounded-4 p-3">
                 <div className="text-body-secondary small">Стоимость</div>
                 <div className="fw-semibold">{formatMoney(request.cost)}</div>
-                <div className="small text-body-secondary mt-2">Оплата произойдёт только при закрытии заявки.</div>
+                <div className="small text-body-secondary mt-2">Оплата произойдет только при закрытии сервисной
+                  заявки.
+                </div>
               </div>
             )}
           </div>
@@ -143,7 +180,13 @@ export function RequestDetailPage({ coworkingId, requestId }: { coworkingId: num
                     <div className="fw-semibold">{message.authorName}</div>
                     <div className="small text-body-secondary">{formatDateTime(message.timestamp)}</div>
                   </div>
-                  <div>{message.text}</div>
+                  {message.text ? <div>{message.text}</div> : null}
+                  {message.attachments?.length ?
+                    <div className="d-grid gap-2 mt-2">{message.attachments.map((attachment) => <a key={attachment.id}
+                                                                                                   href={attachment.url}
+                                                                                                   target="_blank"
+                                                                                                   rel="noreferrer"
+                                                                                                   className="btn btn-sm btn-outline-secondary text-start">📎 {attachment.fileName}</a>)}</div> : null}
                   {message.readAt &&
                       <div className="small text-body-secondary mt-2">Прочитано {formatDateTime(message.readAt)}</div>}
                 </div>
@@ -153,13 +196,17 @@ export function RequestDetailPage({ coworkingId, requestId }: { coworkingId: num
               <textarea className="form-control" rows={4} placeholder="Введите сообщение" value={messageText}
                         onChange={(event) => setMessageText(event.target.value)} disabled={!canReply || submitting}
                         maxLength={1000}/>
+              <input className="form-control" type="file" disabled={!canReply || submitting}
+                     onChange={(event) => setMessageFile(event.target.files?.[0] ?? null)}/>
+              <div className="form-text">Можно прикрепить файл любого формата размером до 50 МБ.</div>
+              {messageFile ? <div className="small text-body-secondary">Файл: {messageFile.name}</div> : null}
               {membershipStatus === 'pending' &&
-                  <div className="alert alert-secondary mb-0">Отправка сообщений доступна только после подтверждения
-                      заявки.</div>}
-              {error && <div className="alert alert-danger mb-0">{error}</div>}
+                  <div className="border rounded-4 bg-body-secondary p-3 mb-0">Отправка сообщений доступна только после
+                      подтверждения
+                      доступа к коворкингу.</div>}
               <div className="d-flex justify-content-end">
                 <button type="submit" className="btn btn-primary"
-                        disabled={!canReply || submitting || !messageText.trim()}>{submitting ? 'Отправка...' : 'Отправить сообщение'}</button>
+                        disabled={!canReply || submitting || (!messageText.trim() && !messageFile)}>{submitting ? 'Отправка...' : 'Отправить сообщение'}</button>
               </div>
             </form>
           </div>

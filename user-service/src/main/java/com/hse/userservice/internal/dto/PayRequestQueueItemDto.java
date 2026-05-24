@@ -7,7 +7,7 @@ public record PayRequestQueueItemDto(
         Long membershipId,
         Long userId,
         String userName,
-        Integer amount,
+        Long amount,
         String status,
         String userComment,
         String adminComment,

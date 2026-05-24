@@ -15,8 +15,8 @@ type NavItem = {
   exact?: boolean;
 };
 
-function extractCoworkingId(pathname: string): string | null {
-  const match = pathname.match(/^\/coworkings\/(\d+)/);
+function extractMembershipId(pathname: string): string | null {
+  const match = pathname.match(/^\/memberships\/(\d+)/);
   return match ? match[1] : null;
 }
 
@@ -30,7 +30,7 @@ function activeNavClass(pathname: string, item: NavItem): string {
 
 export function AppHeader() {
   const pathname = usePathname();
-  const coworkingId = extractCoworkingId(pathname);
+  const membershipId = extractMembershipId(pathname);
   const isAuthPage = pathname === '/login' || pathname === '/register';
   const { context, profile } = useCoworkingShellContext();
   const coworking = context?.coworking ?? null;
@@ -41,13 +41,13 @@ export function AppHeader() {
   }, [pathname]);
 
   const navItems: NavItem[] = useMemo(() => {
-    if (coworkingId) {
+    if (membershipId) {
       return [
-        { key: 'tenant-home', href: `/coworkings/${coworkingId}`, label: 'Коворкинг', exact: true },
-        { key: 'tenant-bookings', href: `/coworkings/${coworkingId}/bookings`, label: 'Бронирования' },
-        { key: 'tenant-balance', href: `/coworkings/${coworkingId}/balance`, label: 'Баланс' },
-        { key: 'tenant-requests', href: `/coworkings/${coworkingId}/requests`, label: 'Заявки' },
-        { key: 'tenant-profile', href: `/coworkings/${coworkingId}/profile`, label: 'Профиль', exact: true },
+        { key: 'tenant-home', href: `/memberships/${membershipId}`, label: 'Коворкинг', exact: true },
+        { key: 'tenant-bookings', href: `/memberships/${membershipId}/bookings`, label: 'Бронирования' },
+        { key: 'tenant-balance', href: `/memberships/${membershipId}/balance`, label: 'Баланс' },
+        { key: 'tenant-requests', href: `/memberships/${membershipId}/requests`, label: 'Сервисные заявки' },
+        { key: 'tenant-profile', href: `/memberships/${membershipId}/profile`, label: 'Профиль', exact: true },
       ];
     }
 
@@ -55,14 +55,14 @@ export function AppHeader() {
       { key: 'global-home', href: '/', label: 'Мои коворкинги', exact: true },
       { key: 'global-profile', href: '/profile', label: 'Профиль', exact: true },
     ];
-  }, [coworkingId]);
+  }, [membershipId]);
 
-  const coworkingLabel = coworkingId ? (coworking?.name ?? 'Загрузка коворкинга...') : null;
+  const coworkingLabel = membershipId ? (coworking?.name ?? 'Загрузка коворкинга...') : null;
   const userName = profile?.name ?? 'Пользователь';
-  const balanceLabel = coworkingId && context ? formatMoney(context.membership.balanceMinorUnits) : null;
-  const coworkingHomeHref = coworkingId ? `/coworkings/${coworkingId}` : null;
-  const balanceHref = coworkingId ? `/coworkings/${coworkingId}/balance` : null;
-  const profileHref = coworkingId ? `/coworkings/${coworkingId}/profile` : '/profile';
+  const balanceLabel = membershipId && context ? formatMoney(context.membership.balanceMinorUnits) : null;
+  const coworkingHomeHref = membershipId ? `/memberships/${membershipId}` : null;
+  const balanceHref = membershipId ? `/memberships/${membershipId}/balance` : null;
+  const profileHref = membershipId ? `/memberships/${membershipId}/profile` : '/profile';
 
   if (isAuthPage) {
     return null;

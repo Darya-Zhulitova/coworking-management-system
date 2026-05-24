@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './globals.css';
 import { AppShell } from '@/components/layout/app-shell';
@@ -31,11 +30,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="ru" suppressHydrationWarning>
     <head>
       <link rel="stylesheet" href="/css/custom.css"/>
+      <script id="theme-init" dangerouslySetInnerHTML={{ __html: themeInitScript }}/>
     </head>
     <body>
-    <Script id="theme-init" strategy="beforeInteractive">
-      {themeInitScript}
-    </Script>
     <ThemeProvider>
       <AppShell>{children}</AppShell>
     </ThemeProvider>

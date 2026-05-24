@@ -12,8 +12,8 @@ export function ThemeToggleButton() {
       type="button"
       className="btn btn-link nav-link d-inline-flex align-items-center justify-content-center p-0 border-0 text-body-emphasis text-decoration-none"
       onClick={toggleTheme}
-      aria-label={isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'}
-      title={isDark ? 'Светлая тема' : 'Тёмная тема'}
+      aria-label={isDark ? 'Переключить на светлую тему' : 'Переключить на темную тему'}
+      title={isDark ? 'Светлая тема' : 'Темная тема'}
       disabled={!isReady}
     >
       <i aria-hidden="true" className={`${iconClassName} fs-5 lh-1`}/>

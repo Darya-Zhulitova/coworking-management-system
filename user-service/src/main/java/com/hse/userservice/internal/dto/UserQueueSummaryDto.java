@@ -1,5 +1,6 @@
 package com.hse.userservice.internal.dto;
 
+
 public record UserQueueSummaryDto(
         Integer usersCount,
         Integer pendingMemberships,
@@ -7,8 +8,8 @@ public record UserQueueSummaryDto(
         Integer openServiceRequests,
         Integer totalBookings,
         Integer activeBookings,
-        Integer currentBalance,
-        Integer monthlyIncome,
+        Long currentBalance,
+        Long monthlyIncome,
         Integer monthlyOccupancyPercent
 ) {
 }

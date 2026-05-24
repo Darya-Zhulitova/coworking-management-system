@@ -1,107 +1,151 @@
 package com.hse.userservice.internal.controller;
 
+import com.hse.userservice.feature.balance.service.BalanceService;
+import com.hse.userservice.feature.booking.service.BookingService;
+import com.hse.userservice.feature.membership.service.MembershipService;
+import com.hse.userservice.feature.servicerequest.service.ServiceRequestService;
 import com.hse.userservice.internal.dto.*;
+import com.hse.userservice.internal.dto.booking.PlaceBookingListDto;
+import com.hse.userservice.internal.dto.membership.InternalMembershipListItemDto;
+import com.hse.userservice.internal.dto.membership.InternalMembershipProfileDto;
+import com.hse.userservice.internal.dto.membership.ManualBalanceAdjustmentRequest;
 import com.hse.userservice.internal.service.UserOperationsInternalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/internal/coworkings/{coworkingId}/users")
+@RequestMapping("/api/internal/coworkings/{coworkingId}")
 @RequiredArgsConstructor
 public class UserOperationsInternalController {
-    private final UserOperationsInternalService service;
+    private final MembershipService membershipService;
+    private final BookingService bookingService;
+    private final BalanceService balanceService;
+    private final ServiceRequestService serviceRequestService;
+    private final UserOperationsInternalService operationsService;
 
-    @GetMapping
+    @GetMapping("/users")
     public List<CoworkingUserReadModelDto> getUsers(@PathVariable Long coworkingId) {
-        return service.getUsers(coworkingId);
-    }
-
-    @GetMapping("/summary")
-    public UserQueueSummaryDto getSummary(@PathVariable Long coworkingId) {
-        return service.getSummary(coworkingId);
-    }
-
-    @GetMapping("/analytics")
-    public UserAnalyticsDto getAnalytics(@PathVariable Long coworkingId) {
-        return service.getAnalytics(coworkingId);
+        return membershipService.getCoworkingUsers(coworkingId);
     }
 
     @GetMapping("/memberships")
+    public List<InternalMembershipListItemDto> getMembershipList(
+            @PathVariable Long coworkingId,
+            @RequestParam(required = false) String search
+    ) {
+        return membershipService.getInternalMembershipList(coworkingId, search);
+    }
+
+    @GetMapping("/memberships/{membershipId}")
+    public InternalMembershipProfileDto getMembershipProfile(
+            @PathVariable Long coworkingId,
+            @PathVariable Long membershipId
+    ) {
+        return membershipService.getInternalMembershipProfile(coworkingId, membershipId);
+    }
+
+    @PostMapping("/memberships/{membershipId}/balance-adjustments")
+    public InternalMembershipProfileDto adjustMembershipBalance(
+            @PathVariable Long coworkingId,
+            @PathVariable Long membershipId,
+            @Valid @RequestBody ManualBalanceAdjustmentRequest request
+    ) {
+        balanceService.adjustBalanceByAdmin(coworkingId, membershipId, request.amountMinorUnits(), request.comment());
+        return membershipService.getInternalMembershipProfile(coworkingId, membershipId);
+    }
+
+    @GetMapping("/places/{placeId}/bookings")
+    public PlaceBookingListDto getCurrentPlaceBookings(@PathVariable Long coworkingId, @PathVariable Long placeId) {
+        return bookingService.getCurrentPlaceBookings(coworkingId, placeId);
+    }
+
+    @GetMapping("/operations-dashboard")
+    public OperationsDashboardDto getOperationsDashboard(@PathVariable Long coworkingId) {
+        return operationsService.getOperationsDashboard(coworkingId);
+    }
+
+    @GetMapping("/membership-requests")
     public List<MembershipQueueItemDto> getMemberships(@PathVariable Long coworkingId) {
-        return service.getMemberships(coworkingId);
+        return membershipService.getMembershipQueue(coworkingId);
     }
 
-    @PostMapping("/memberships/{membershipId}/approve")
+    @PostMapping("/membership-requests/{membershipId}/decision")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void approveMembership(@PathVariable Long coworkingId, @PathVariable Long membershipId) {
-        service.approveMembership(coworkingId, membershipId);
+    public void decideMembership(
+            @PathVariable Long coworkingId,
+            @PathVariable Long membershipId,
+            @Valid @RequestBody InternalDecisionRequest request
+    ) {
+        operationsService.decideMembership(coworkingId, membershipId, request);
     }
 
-    @PostMapping("/memberships/{membershipId}/reject")
+    @PostMapping("/memberships/{membershipId}/block")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void rejectMembership(@PathVariable Long coworkingId, @PathVariable Long membershipId) {
-        service.rejectMembership(coworkingId, membershipId);
+    public void blockMembership(@PathVariable Long coworkingId, @PathVariable Long membershipId) {
+        membershipService.blockByAdmin(coworkingId, membershipId);
     }
 
     @GetMapping("/pay-requests")
     public List<PayRequestQueueItemDto> getPayRequests(@PathVariable Long coworkingId) {
-        return service.getPayRequests(coworkingId);
+        return balanceService.getPayRequestQueue(coworkingId);
     }
 
-    @PostMapping("/pay-requests/{payRequestId}/approve")
+    @PostMapping("/pay-requests/{payRequestId}/decision")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void approvePayRequest(@PathVariable Long coworkingId, @PathVariable Long payRequestId) {
-        service.approvePayRequest(coworkingId, payRequestId);
-    }
-
-    @PostMapping("/pay-requests/{payRequestId}/reject")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void rejectPayRequest(@PathVariable Long coworkingId, @PathVariable Long payRequestId) {
-        service.rejectPayRequest(coworkingId, payRequestId);
+    public void decidePayRequest(
+            @PathVariable Long coworkingId,
+            @PathVariable Long payRequestId,
+            @Valid @RequestBody InternalDecisionRequest request
+    ) {
+        operationsService.decidePayRequest(coworkingId, payRequestId, request);
     }
 
     @GetMapping("/service-requests")
     public List<ServiceRequestQueueItemDto> getServiceRequests(@PathVariable Long coworkingId) {
-        return service.getServiceRequests(coworkingId);
+        return serviceRequestService.getInternalQueue(coworkingId);
     }
 
-    @GetMapping("/service-requests/{serviceRequestId}")
-    public InternalServiceRequestDetailDto getServiceRequestDetails(
+    @GetMapping("/service-requests/{serviceRequestId}/workspace")
+    public InternalServiceRequestWorkspaceDto getServiceRequestWorkspace(
             @PathVariable Long coworkingId,
             @PathVariable Long serviceRequestId
     ) {
-        return service.getServiceRequestDetails(coworkingId, serviceRequestId);
+        return serviceRequestService.getInternalWorkspace(coworkingId, serviceRequestId);
     }
 
-    @GetMapping("/service-requests/{serviceRequestId}/messages")
-    public List<InternalServiceRequestMessageDto> getServiceRequestMessages(
-            @PathVariable Long coworkingId,
-            @PathVariable Long serviceRequestId
-    ) {
-        return service.getServiceRequestMessages(coworkingId, serviceRequestId);
-    }
-
-    @PostMapping("/service-requests/{serviceRequestId}/messages")
+    @PostMapping(value = "/service-requests/{serviceRequestId}/messages", consumes = "multipart/form-data")
     @ResponseStatus(HttpStatus.CREATED)
     public InternalServiceRequestMessageDto addServiceRequestMessage(
             @PathVariable Long coworkingId,
             @PathVariable Long serviceRequestId,
-            @Valid @RequestBody CreateInternalServiceRequestMessageDto dto
+            @RequestParam(required = false) String text,
+            @RequestPart(required = false) MultipartFile file
     ) {
-        return service.addAdminServiceRequestMessage(coworkingId, serviceRequestId, dto);
+        return serviceRequestService.addAdminMessageInternal(coworkingId, serviceRequestId, text, file);
     }
 
-    @PostMapping("/service-requests/{serviceRequestId}/status/{status}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void advanceServiceRequest(
+    @PostMapping("/service-requests/{serviceRequestId}/messages")
+    @ResponseStatus(HttpStatus.CREATED)
+    public InternalServiceRequestMessageDto addJsonServiceRequestMessage(
             @PathVariable Long coworkingId,
             @PathVariable Long serviceRequestId,
-            @PathVariable String status
+            @Valid @RequestBody CreateInternalServiceRequestMessageDto dto
     ) {
-        service.advanceServiceRequest(coworkingId, serviceRequestId, status);
+        return serviceRequestService.addAdminMessageInternal(coworkingId, serviceRequestId, dto.text(), null);
+    }
+
+    @PostMapping("/service-requests/{serviceRequestId}/decision")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void decideServiceRequest(
+            @PathVariable Long coworkingId,
+            @PathVariable Long serviceRequestId,
+            @Valid @RequestBody InternalDecisionRequest request
+    ) {
+        operationsService.decideServiceRequest(coworkingId, serviceRequestId, request);
     }
 }

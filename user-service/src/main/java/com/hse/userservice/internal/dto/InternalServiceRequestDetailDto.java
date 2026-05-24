@@ -10,7 +10,7 @@ public record InternalServiceRequestDetailDto(
         String userEmail,
         String typeName,
         String name,
-        Integer cost,
+        Long cost,
         Long balanceMinorUnits,
         String status,
         LocalDateTime createdAt,

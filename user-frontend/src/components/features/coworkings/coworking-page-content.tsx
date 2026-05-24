@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { formatDate, formatMoney } from '@/lib/format';
-import { ClientRequestError, requestJson } from '@/lib/client/api';
 import type { Booking, BookingInitData, MembershipStatus, UserCoworkingDetails } from '@/lib/types';
+import { ImagePreviewModal } from '@/components/ui/image-preview-modal';
 
 type QuickAction = {
   label: string;
@@ -18,55 +18,24 @@ type StatusContent = {
   description: string;
 };
 
-export function CoworkingPageContent({ coworkingId }: { coworkingId: number }) {
-  const [coworking, setCoworking] = useState<UserCoworkingDetails | null>(null);
-  const [bookingInit, setBookingInit] = useState<BookingInitData | null>(null);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadPageData() {
-      try {
-        const [coworkingData, bookingInitData, bookingItems] = await Promise.all([
-          requestJson<UserCoworkingDetails>(`/api/coworkings/${coworkingId}`),
-          requestJson<BookingInitData>(`/api/coworkings/${coworkingId}/booking/init`),
-          requestJson<Booking[]>(`/api/coworkings/${coworkingId}/bookings`),
-        ]);
-
-        if (!isMounted) {
-          return;
-        }
-
-        setCoworking(coworkingData);
-        setBookingInit(bookingInitData);
-        setBookings(bookingItems);
-        setErrorMessage(null);
-      } catch (error: unknown) {
-        if (!isMounted) {
-          return;
-        }
-
-        setErrorMessage(
-          error instanceof ClientRequestError
-            ? error.message
-            : 'Не удалось загрузить данные коворкинга.',
-        );
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    void loadPageData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [coworkingId]);
+export function CoworkingPageContent({
+                                       membershipId,
+                                       initialCoworking,
+                                       initialBookingInit,
+                                       initialBookings,
+                                       initialError = null
+                                     }: {
+  membershipId: number;
+  initialCoworking: UserCoworkingDetails | null;
+  initialBookingInit: BookingInitData | null;
+  initialBookings: Booking[];
+  initialError?: string | null
+}) {
+  const [coworking] = useState<UserCoworkingDetails | null>(initialCoworking);
+  const [bookingInit] = useState<BookingInitData | null>(initialBookingInit);
+  const [bookings] = useState<Booking[]>(initialBookings);
+  const [errorMessage] = useState<string | null>(initialError);
+  const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
 
   const membershipStatus = (coworking?.membershipStatus ?? bookingInit?.membershipStatus ?? 'pending') as MembershipStatus;
   const balance = coworking?.balanceMinorUnits ?? bookingInit?.balanceMinorUnits ?? 0;
@@ -83,14 +52,14 @@ export function CoworkingPageContent({ coworkingId }: { coworkingId: number }) {
       return {
         title: coworking?.heroTitle ?? coworking?.name ?? 'Коворкинг',
         description:
-          'Создание бронирований и пополнение недоступны. Вы можете создавать сервисные заявки и заявки на списание средств, а также просматривать историю.',
+          'Создание бронирований и пополнение недоступны. Вы можете создавать сервисные заявки и платежные заявки на списание средств, а также просматривать историю.',
       };
     }
 
     return {
       title: coworking?.heroTitle ?? coworking?.name ?? 'Коворкинг',
       description:
-        'Вы можете просматривать пространство и общую доступность, но все действия временно заблокированы до подтверждения membership.',
+        'Вы можете просматривать пространство и общую доступность, но действия будут доступны после подтверждения доступа к коворкингу.',
     };
   }, [coworking, membershipStatus]);
 
@@ -98,12 +67,12 @@ export function CoworkingPageContent({ coworkingId }: { coworkingId: number }) {
     return [
       {
         label: 'Новое бронирование',
-        href: `/coworkings/${coworkingId}/bookings/new`,
+        href: `/memberships/${membershipId}/bookings/new`,
         disabled: membershipStatus !== 'active',
         variant: 'primary',
       },
     ];
-  }, [coworkingId, membershipStatus]);
+  }, [membershipId, membershipStatus]);
 
   const nearbyBookings = useMemo(() => {
     return bookings.filter((item) => item.active).slice(0, 3);
@@ -115,7 +84,7 @@ export function CoworkingPageContent({ coworkingId }: { coworkingId: number }) {
     }
 
     return (coworking.imageUrls ?? []).map((imageUrl, index) => ({
-      id: `${coworking.id}-${index + 1}`,
+      id: `${membershipId}-${index + 1}`,
       title: `${coworking.name} — фото ${index + 1}`,
       image: imageUrl,
     }));
@@ -129,7 +98,7 @@ export function CoworkingPageContent({ coworkingId }: { coworkingId: number }) {
     let isDisposed = false;
 
     async function startCarousel() {
-      const carouselElement = document.getElementById(`coworkingShowcase-${coworkingId}`);
+      const carouselElement = document.getElementById(`coworkingShowcase-${membershipId}`);
       if (!carouselElement) {
         return;
       }
@@ -155,7 +124,7 @@ export function CoworkingPageContent({ coworkingId }: { coworkingId: number }) {
 
     return () => {
       isDisposed = true;
-      const carouselElement = document.getElementById(`coworkingShowcase-${coworkingId}`);
+      const carouselElement = document.getElementById(`coworkingShowcase-${membershipId}`);
       if (!carouselElement) {
         return;
       }
@@ -167,21 +136,20 @@ export function CoworkingPageContent({ coworkingId }: { coworkingId: number }) {
           instance?.dispose();
         })
         .catch(() => {
-          // Игнорируем ошибку очистки, чтобы не ломать страницу при размонтировании.
         });
     };
-  }, [coworkingId, showcaseSlides.length]);
+  }, [membershipId, showcaseSlides.length]);
 
-  if (isLoading) {
-    return <div className="alert alert-secondary mb-0">Загрузка данных коворкинга...</div>;
-  }
 
   if (errorMessage) {
-    return <div className="alert alert-danger mb-0">{errorMessage}</div>;
+    return <div
+      className="border rounded-4 border-danger-subtle bg-danger-subtle text-danger-emphasis p-3 mb-0">{errorMessage}</div>;
   }
 
   if (!coworking || !bookingInit) {
-    return <div className="alert alert-warning mb-0">Коворкинг не найден.</div>;
+    return <div
+      className="border rounded-4 border-warning-subtle bg-warning-subtle text-warning-emphasis p-3 mb-0">Коворкинг не
+      найден.</div>;
   }
 
   return (
@@ -242,16 +210,32 @@ export function CoworkingPageContent({ coworkingId }: { coworkingId: number }) {
                   ) : (
                     nearbyBookings.map((booking) => (
                       <div className="list-group-item px-0 py-3" key={booking.id}>
-                        <div className="fw-semibold">{booking.placeName}</div>
-                        <div className="text-body-secondary small">{formatDate(booking.date)}</div>
-                        <div className="mt-2">{formatMoney(booking.cost)}</div>
+                        <div className="d-flex gap-3 align-items-start">
+                          {booking.placePreviewImageUrl ? (
+                            <button type="button" className="btn p-0 border-0 bg-transparent flex-shrink-0"
+                                    onClick={() => setPreviewImage({
+                                      url: booking.placeFullImageUrl ?? booking.placePreviewImageUrl!,
+                                      title: booking.placeName
+                                    })}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={booking.placePreviewImageUrl} alt={booking.placeName}
+                                   className="rounded object-fit-cover" width={96} height={72}/>
+                            </button>
+                          ) : null}
+                          <div className="min-w-0">
+                            <div className="fw-semibold">{booking.placeName}</div>
+                            <div className="text-body-secondary small">{formatDate(booking.date)}</div>
+                            <div className="mt-2">{formatMoney(booking.cost)}</div>
+                          </div>
+                        </div>
                       </div>
                     ))
                   )}
                 </div>
               </div>
 
-              <Link href={`/coworkings/${coworkingId}/bookings`} className="btn btn-primary">
+              <Link href={`/memberships/${membershipId}/bookings`}
+                    className="btn btn-primary btn-lg align-self-start px-5">
                 Все бронирования
               </Link>
             </div>
@@ -267,7 +251,7 @@ export function CoworkingPageContent({ coworkingId }: { coworkingId: number }) {
             </div>
           ) : (
             <div
-              id={`coworkingShowcase-${coworkingId}`}
+              id={`coworkingShowcase-${membershipId}`}
               className="carousel slide card border-0 shadow-sm overflow-hidden"
               data-bs-ride={showcaseSlides.length > 1 ? 'carousel' : undefined}
               data-bs-interval={showcaseSlides.length > 1 ? '4000' : undefined}
@@ -278,7 +262,7 @@ export function CoworkingPageContent({ coworkingId }: { coworkingId: number }) {
                     <button
                       key={slide.id}
                       type="button"
-                      data-bs-target={`#coworkingShowcase-${coworkingId}`}
+                      data-bs-target={`#coworkingShowcase-${membershipId}`}
                       data-bs-slide-to={index}
                       className={index === 0 ? 'active' : ''}
                       aria-current={index === 0 ? 'true' : undefined}
@@ -306,7 +290,7 @@ export function CoworkingPageContent({ coworkingId }: { coworkingId: number }) {
                   <button
                     className="carousel-control-prev"
                     type="button"
-                    data-bs-target={`#coworkingShowcase-${coworkingId}`}
+                    data-bs-target={`#coworkingShowcase-${membershipId}`}
                     data-bs-slide="prev"
                   >
                     <span className="carousel-control-prev-icon" aria-hidden="true"/>
@@ -315,7 +299,7 @@ export function CoworkingPageContent({ coworkingId }: { coworkingId: number }) {
                   <button
                     className="carousel-control-next"
                     type="button"
-                    data-bs-target={`#coworkingShowcase-${coworkingId}`}
+                    data-bs-target={`#coworkingShowcase-${membershipId}`}
                     data-bs-slide="next"
                   >
                     <span className="carousel-control-next-icon" aria-hidden="true"/>
@@ -327,6 +311,8 @@ export function CoworkingPageContent({ coworkingId }: { coworkingId: number }) {
           )}
         </div>
       </div>
+      <ImagePreviewModal image={previewImage} onClose={() => setPreviewImage(null)}/>
+
     </div>
   );
 }

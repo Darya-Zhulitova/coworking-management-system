@@ -1,36 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { formatMoney } from '@/lib/format';
-import { ClientRequestError, requestJson } from '@/lib/client/api';
 import type { MembershipSummary } from '@/lib/types';
 
-export function Dashboard() {
-  const [memberships, setMemberships] = useState<MembershipSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    requestJson<MembershipSummary[]>('/api/users/me/memberships')
-      .then((data) => {
-        if (!isMounted) return;
-        setMemberships(data);
-      })
-      .catch((error) => {
-        if (!isMounted) return;
-        setErrorMessage(error instanceof ClientRequestError || error instanceof Error ? error.message : 'Не удалось загрузить список коворкингов.');
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+export function Dashboard({ initialMemberships, initialError = null }: {
+  initialMemberships: MembershipSummary[];
+  initialError?: string | null
+}) {
+  const [memberships] = useState<MembershipSummary[]>(initialMemberships);
+  const [errorMessage] = useState<string | null>(initialError);
 
   return (
     <div className="d-grid gap-4">
@@ -42,10 +23,10 @@ export function Dashboard() {
         </div>
       </section>
 
-      {isLoading ? <div className="alert alert-secondary mb-0">Загрузка списка коворкингов...</div> : null}
-      {errorMessage ? <div className="alert alert-danger mb-0">{errorMessage}</div> : null}
+      {errorMessage ? <div
+        className="border rounded-4 border-danger-subtle bg-danger-subtle text-danger-emphasis p-3 mb-0">{errorMessage}</div> : null}
 
-      {!isLoading && !errorMessage ? (
+      {!errorMessage ? (
         <div className="row g-4">
           {memberships.length === 0 ? (
             <div className="col-12">
@@ -74,7 +55,7 @@ export function Dashboard() {
                       <div className="text-body-secondary small">Баланс</div>
                       <div className="h5 mb-0">{formatMoney(membership.balance)}</div>
                     </div>
-                    <Link href={`/coworkings/${membership.coworkingId}`} className="btn btn-primary">
+                    <Link href={`/memberships/${membership.id}`} className="btn btn-primary">
                       Открыть
                     </Link>
                   </div>

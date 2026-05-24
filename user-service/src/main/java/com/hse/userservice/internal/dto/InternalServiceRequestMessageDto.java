@@ -1,14 +1,14 @@
 package com.hse.userservice.internal.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record InternalServiceRequestMessageDto(
-        Long messageId,
-        Long serviceRequestId,
+        Long id,
         String authorType,
         String authorName,
         String text,
-        LocalDateTime timestamp,
-        LocalDateTime readAt
+        LocalDateTime createdAt,
+        List<InternalServiceRequestAttachmentDto> attachments
 ) {
 }

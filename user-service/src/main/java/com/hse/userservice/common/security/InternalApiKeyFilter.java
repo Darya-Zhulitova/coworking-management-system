@@ -15,7 +15,7 @@ public class InternalApiKeyFilter extends OncePerRequestFilter {
     private static final String INTERNAL_HEADER = "X-Internal-Api-Key";
     private final String expectedApiKey;
 
-    public InternalApiKeyFilter(@Value("${integration.internal-api.key:demo-internal-key}") String expectedApiKey) {
+    public InternalApiKeyFilter(@Value("${integration.internal-api.key}") String expectedApiKey) {
         this.expectedApiKey = expectedApiKey;
     }
 
@@ -34,7 +34,7 @@ public class InternalApiKeyFilter extends OncePerRequestFilter {
         if (actual == null || !actual.equals(expectedApiKey)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
-            response.getWriter().write("{\"message\":\"Invalid internal api key\"}");
+            response.getWriter().write("{\"message\":\"Некорректный внутренний ключ API\"}");
             return;
         }
         filterChain.doFilter(request, response);

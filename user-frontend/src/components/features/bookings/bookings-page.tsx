@@ -6,10 +6,12 @@ import { formatDate, formatDateTimeShort, formatMoney, formatMoneyCompact } from
 import { ClientRequestError, requestJson } from '@/lib/client/api';
 import type { Booking, BookingInitData } from '@/lib/types';
 import { notifyCoworkingContextChanged } from '@/components/layout/coworking-shell-context';
+import { ImagePreviewModal } from '@/components/ui/image-preview-modal';
+import { useToast } from '@/components/ui/toast-provider';
 
 type CancelBookingResult = {
   bookingId: number;
-  coworkingId: number;
+  membershipId: number;
   refundMinorUnits: number;
   balanceAfterMinorUnits: number;
 };
@@ -35,7 +37,7 @@ function getBookingDisplayStatus(booking: Booking): string {
 
 function getCancellationCaption(booking: Booking): string {
   const currentRefund = booking.cancellationPreview ?? 0;
-  if (currentRefund <= 0) return 'Отмена по правилам тарифа больше недоступна.';
+  if (currentRefund <= 0) return 'Можно отменить без возврата средств.';
 
   const fullRefundAmount = booking.cost;
   const lateRefundAmount = Math.trunc((booking.cost * booking.lateCancellationRefundPercent) / 100);
@@ -52,39 +54,29 @@ function getCancellationCaption(booking: Booking): string {
   return `Возврат ${formatMoneyCompact(currentRefund)} (${booking.lateCancellationRefundPercent}%).`;
 }
 
-export function BookingsPage({ coworkingId }: { coworkingId: number }) {
-  const [membershipStatus, setMembershipStatus] = useState<string | null>(null);
-  const [items, setItems] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+export function BookingsPage({ membershipId, initialBookingInit, initialBookings, initialError = null }: {
+  membershipId: number;
+  initialBookingInit: BookingInitData | null;
+  initialBookings: Booking[];
+  initialError?: string | null
+}) {
+  const toast = useToast();
+  const [membershipStatus, setMembershipStatus] = useState<string | null>(initialBookingInit?.membershipStatus ?? null);
+  const [items, setItems] = useState<Booking[]>(initialBookings);
+  const [errorMessage, setErrorMessage] = useState<string | null>(initialError);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
 
   const loadBookings = useCallback(async () => {
     const [initData, bookings] = await Promise.all([
-      requestJson<BookingInitData>(`/api/coworkings/${coworkingId}/booking/init`),
-      requestJson<Booking[]>(`/api/coworkings/${coworkingId}/bookings`),
+      requestJson<BookingInitData>(`/api/memberships/${membershipId}/booking/init`),
+      requestJson<Booking[]>(`/api/memberships/${membershipId}/bookings`),
     ]);
     setMembershipStatus(initData.membershipStatus);
     setItems(bookings);
     setErrorMessage(null);
-  }, [coworkingId]);
-
-  useEffect(() => {
-    let active = true;
-    loadBookings()
-      .catch((error: unknown) => {
-        if (!active) return;
-        setErrorMessage(error instanceof ClientRequestError ? error.message : 'Не удалось загрузить бронирования.');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [loadBookings]);
+  }, [membershipId]);
 
   useEffect(() => {
     if (!bookingToCancel) {
@@ -116,17 +108,18 @@ export function BookingsPage({ coworkingId }: { coworkingId: number }) {
     const refundAmount = bookingToCancel.cancellationPreview ?? 0;
     return {
       refundAmount,
-      refundRule: refundAmount >= bookingToCancel.cost
-        ? 'Полный возврат.'
-        : `Частичный возврат ${bookingToCancel.lateCancellationRefundPercent}%.`,
+      refundRule: refundAmount <= 0
+        ? 'Возврат средств не предусмотрен, но отмена освободит место.'
+        : refundAmount >= bookingToCancel.cost
+          ? 'Полный возврат.'
+          : `Частичный возврат ${bookingToCancel.lateCancellationRefundPercent}%.`,
     };
   }, [bookingToCancel]);
 
   function openCancelModal(booking: Booking) {
     if (membershipStatus !== 'active') return;
-    if ((booking.cancellationPreview ?? 0) <= 0) return;
+    if (booking.status !== 'ACTUAL') return;
     setBookingToCancel(booking);
-    setActionMessage(null);
     setErrorMessage(null);
   }
 
@@ -139,22 +132,24 @@ export function BookingsPage({ coworkingId }: { coworkingId: number }) {
     if (!bookingToCancel || membershipStatus !== 'active') return;
 
     setCancellingId(bookingToCancel.id);
-    setActionMessage(null);
     try {
-      const response = await requestJson<CancelBookingResult>(`/api/coworkings/${coworkingId}/bookings/${bookingToCancel.id}/cancel`, { method: 'POST' });
+      const response = await requestJson<CancelBookingResult>(`/api/memberships/${membershipId}/bookings/${bookingToCancel.id}/cancel`, { method: 'POST' });
       notifyCoworkingContextChanged();
       await loadBookings();
-      setActionMessage(`Бронирование отменено. Возврат: ${formatMoney(response.refundMinorUnits)}.`);
+      const refundText = response.refundMinorUnits > 0
+        ? `Возврат: ${formatMoney(response.refundMinorUnits)}.`
+        : 'Без возврата средств.';
+      toast.success(`Бронирование отменено. ${refundText}`);
       setBookingToCancel(null);
     } catch (error: unknown) {
-      setErrorMessage(error instanceof ClientRequestError ? error.message : 'Не удалось отменить бронирование.');
+      toast.error(error instanceof ClientRequestError ? error.message : 'Не удалось отменить бронирование.');
     } finally {
       setCancellingId(null);
     }
   }
 
-  if (loading) return <div className="alert alert-light border mb-0">Загрузка бронирований...</div>;
-  if (errorMessage && !items.length) return <div className="alert alert-danger mb-0">{errorMessage}</div>;
+  if (errorMessage && !items.length) return <div
+    className="border rounded-4 border-danger-subtle bg-danger-subtle text-danger-emphasis p-3 mb-0">{errorMessage}</div>;
 
   return (
     <>
@@ -164,9 +159,8 @@ export function BookingsPage({ coworkingId }: { coworkingId: number }) {
             <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
               <div>
                 <h1 className="h3 mb-2">Бронирования</h1>
-                <div className="text-body-secondary">Управляйте активными бронированиями и просматривайте историю.</div>
               </div>
-              <Link href={canCreate ? `/coworkings/${coworkingId}/bookings/new` : `/coworkings/${coworkingId}`}
+              <Link href={canCreate ? `/memberships/${membershipId}/bookings/new` : `/memberships/${membershipId}`}
                     className={`btn ${canCreate ? 'btn-primary' : 'btn-outline-secondary disabled'}`}>
                 Новое бронирование
               </Link>
@@ -174,8 +168,6 @@ export function BookingsPage({ coworkingId }: { coworkingId: number }) {
           </div>
         </section>
 
-        {errorMessage ? <div className="alert alert-danger mb-0">{errorMessage}</div> : null}
-        {actionMessage ? <div className="alert alert-success mb-0">{actionMessage}</div> : null}
 
         <div className="row g-4">
           <div className="col-12 col-xl-6">
@@ -185,18 +177,32 @@ export function BookingsPage({ coworkingId }: { coworkingId: number }) {
                 {activeItems.length === 0 ? (
                   <div className="text-body-secondary">Активных бронирований пока нет.</div>
                 ) : activeItems.map((booking) => {
-                  const cancellationAvailable = membershipStatus === 'active' && (booking.cancellationPreview ?? 0) > 0;
+                  const cancellationAvailable = membershipStatus === 'active' && booking.status === 'ACTUAL';
                   const isCancelling = cancellingId === booking.id;
 
                   return (
                     <div className="card border" key={booking.id}>
                       <div className="card-body">
                         <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
-                          <div>
-                            <div className="fw-semibold">{booking.placeName}</div>
-                            <div className="small text-body-secondary">{formatDate(booking.date)} ·
-                              Заказ {booking.requestId}</div>
-                            <div className="small text-body-secondary">Статус: {getBookingDisplayStatus(booking)}</div>
+                          <div className="d-flex gap-3 align-items-start">
+                            {booking.placePreviewImageUrl ? (
+                              <button type="button" className="btn p-0 border-0 bg-transparent flex-shrink-0"
+                                      onClick={() => setPreviewImage({
+                                        url: booking.placeFullImageUrl ?? booking.placePreviewImageUrl!,
+                                        title: booking.placeName
+                                      })}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={booking.placePreviewImageUrl} alt={booking.placeName}
+                                     className="rounded object-fit-cover" width={96} height={72}/>
+                              </button>
+                            ) : null}
+                            <div>
+                              <div className="fw-semibold">{booking.placeName}</div>
+                              <div className="small text-body-secondary">{formatDate(booking.date)} ·
+                                Бронирование {booking.bookingNumber ?? booking.requestId}</div>
+                              <div
+                                className="small text-body-secondary">Статус: {getBookingDisplayStatus(booking)}</div>
+                            </div>
                           </div>
                           <div className="fw-semibold">{formatMoney(booking.cost)}</div>
                         </div>
@@ -232,10 +238,23 @@ export function BookingsPage({ coworkingId }: { coworkingId: number }) {
                   <div className="card border" key={booking.id}>
                     <div className="card-body">
                       <div className="d-flex justify-content-between align-items-start gap-3 mb-2">
-                        <div>
-                          <div className="fw-semibold">{booking.placeName}</div>
-                          <div className="small text-body-secondary">{formatDate(booking.date)} ·
-                            Заказ {booking.requestId}</div>
+                        <div className="d-flex gap-3 align-items-start">
+                          {booking.placePreviewImageUrl ? (
+                            <button type="button" className="btn p-0 border-0 bg-transparent flex-shrink-0"
+                                    onClick={() => setPreviewImage({
+                                      url: booking.placeFullImageUrl ?? booking.placePreviewImageUrl!,
+                                      title: booking.placeName
+                                    })}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={booking.placePreviewImageUrl} alt={booking.placeName}
+                                   className="rounded object-fit-cover" width={96} height={72}/>
+                            </button>
+                          ) : null}
+                          <div>
+                            <div className="fw-semibold">{booking.placeName}</div>
+                            <div className="small text-body-secondary">{formatDate(booking.date)} ·
+                              Бронирование {booking.bookingNumber ?? booking.requestId}</div>
+                          </div>
                         </div>
                         <div className="fw-semibold">{formatMoney(booking.cost)}</div>
                       </div>
@@ -248,6 +267,7 @@ export function BookingsPage({ coworkingId }: { coworkingId: number }) {
           </div>
         </div>
       </div>
+      <ImagePreviewModal image={previewImage} onClose={() => setPreviewImage(null)}/>
 
       {bookingToCancel && cancellationDetails ? (
         <>
