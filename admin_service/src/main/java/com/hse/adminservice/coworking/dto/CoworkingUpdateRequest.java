@@ -12,8 +12,9 @@ public record CoworkingUpdateRequest(
         @NotBlank @Size(max = 255) String workingHoursLabel,
         @Size(max = 255) String heroTitle,
         @Size(max = 2000) String heroText,
-        List<@NotBlank @Size(max = 2000) String> imageUrls,
+        List<@NotBlank @Size(max = 500) String> imageFileIds,
         Boolean active,
-        Boolean autoApproveMembership
+        Boolean autoApproveMembership,
+        Boolean floorMapEnabled
 ) {
 }

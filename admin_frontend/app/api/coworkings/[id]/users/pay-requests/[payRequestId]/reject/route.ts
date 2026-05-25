@@ -7,18 +7,20 @@ function parseId(value: string): number | null {
   return Number.isInteger(parsed) ? parsed : null;
 }
 
-export async function POST(_request: Request, { params }: { params: Promise<{ id: string; payRequestId: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string; payRequestId: string }> }) {
   const session = await getAdminSession();
-  if (!session) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
+  if (!session) return NextResponse.json({ message: 'Необходимо войти в систему.' }, { status: 401 });
   const { id, payRequestId } = await params;
   const coworkingId = parseId(id);
   const parsedId = parseId(payRequestId);
-  if (coworkingId == null || parsedId == null) return NextResponse.json({ message: 'Invalid id.' }, { status: 400 });
+  if (coworkingId == null || parsedId == null) return NextResponse.json({ message: 'Некорректный идентификатор.' }, { status: 400 });
   try {
-    await rejectPayRequest(session.token, coworkingId, parsedId);
+    const body = await request.json().catch(() => ({})) as { comment?: unknown };
+    const comment = typeof body.comment === 'string' ? body.comment.trim() : undefined;
+    await rejectPayRequest(session.token, coworkingId, parsedId, comment && comment.length > 0 ? comment : undefined);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     if (error instanceof BackendRequestError) return NextResponse.json({ message: error.message }, { status: error.status || 500 });
-    return NextResponse.json({ message: 'Unable to update pay request.' }, { status: 500 });
+    return NextResponse.json({ message: 'Не удалось обновить платежную заявку.' }, { status: 500 });
   }
 }

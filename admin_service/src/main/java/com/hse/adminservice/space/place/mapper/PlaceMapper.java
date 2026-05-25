@@ -1,5 +1,6 @@
 package com.hse.adminservice.space.place.mapper;
 
+import com.hse.adminservice.files.FileStorageService;
 import com.hse.adminservice.space.place.domain.Place;
 import com.hse.adminservice.space.place.dto.PlaceResponse;
 import com.hse.adminservice.space.placetype.mapper.PlaceTypeMapper;
@@ -13,8 +14,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PlaceMapper {
     private final PlaceTypeMapper placeTypeMapper;
+    private final FileStorageService fileStorageService;
 
     public PlaceResponse toResponse(Place place) {
+        String fullImageKey = place.getFullImageFileId() != null ? place.getFullImageFileId() : place.getImageFileId();
+        String previewImageKey = place.getPreviewImageFileId() != null ? place.getPreviewImageFileId() : fullImageKey;
         return PlaceResponse.builder()
                 .id(place.getId())
                 .name(place.getName())
@@ -28,6 +32,9 @@ public class PlaceMapper {
                 .floorName(place.getFloor().getName())
                 .locX(place.getLocX())
                 .locY(place.getLocY())
+                .imageFileId(fullImageKey)
+                .previewImageUrl(fileStorageService.presignedUrl(previewImageKey))
+                .fullImageUrl(fileStorageService.presignedUrl(fullImageKey))
                 .amenities(parseAmenities(place.getAmenitiesRaw()))
                 .placeType(placeTypeMapper.toSummary(place.getPlaceType()))
                 .build();

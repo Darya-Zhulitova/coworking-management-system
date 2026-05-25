@@ -11,6 +11,7 @@ public record FloorResponse(
         String name,
         Integer index,
         String imageFileId,
+        String imageUrl,
         Boolean active,
         Boolean archived,
         LocalDateTime archivedAt,

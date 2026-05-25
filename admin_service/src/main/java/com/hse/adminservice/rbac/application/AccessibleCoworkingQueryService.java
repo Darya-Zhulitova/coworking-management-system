@@ -50,6 +50,6 @@ public class AccessibleCoworkingQueryService {
                 .filter(found -> Boolean.TRUE.equals(found.getActive()) && !Boolean.TRUE.equals(found.getCoworking()
                         .getArchived()))
                 .map(found -> found.getRole().getName())
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
     }
 }

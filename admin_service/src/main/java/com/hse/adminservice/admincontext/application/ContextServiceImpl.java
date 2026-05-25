@@ -30,7 +30,7 @@ public class ContextServiceImpl implements ContextService {
 
         var context = authorizationService.resolveForCoworkingScope(coworkingId);
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
 
         return AppContextResponse.builder().id(admin.getId()).email(admin.getEmail()).name(admin.getName()).role(
                 accessService.resolveDisplayAccessLabel(admin.getId(), coworking)).grants(context.grants()).coworkingId(

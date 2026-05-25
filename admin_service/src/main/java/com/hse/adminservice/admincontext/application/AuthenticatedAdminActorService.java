@@ -11,7 +11,7 @@ public class AuthenticatedAdminActorService {
     public AuthenticatedAdminPrincipal getCurrentPrincipal() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedAdminPrincipal principal)) {
-            throw new ResourceNotFoundException("Authenticated admin subject not found");
+            throw new ResourceNotFoundException("Администратор не найден");
         }
         return principal;
     }

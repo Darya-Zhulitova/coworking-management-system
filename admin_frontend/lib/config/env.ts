@@ -6,6 +6,6 @@ function normalizeBaseUrl(value: string): string {
 
 export const env = {
   apiBaseUrl: normalizeBaseUrl(
-    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || DEFAULT_API_BASE_URL,
+    process.env.ADMIN_BACKEND_BASE_URL?.trim() || DEFAULT_API_BASE_URL,
   ),
 } as const;

@@ -34,6 +34,6 @@ public class TariffQueryService {
 
     Tariff getExistingTariff(Long coworkingId, Long tariffId) {
         return tariffRepository.findByIdAndCoworkingIdAndArchivedFalse(tariffId, coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tariff not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Тариф не найден"));
     }
 }

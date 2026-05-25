@@ -10,7 +10,7 @@ import java.time.LocalDate;
 public class CloseDayRequest {
     @NotNull
     private LocalDate date;
-
     @NotBlank
     private String name;
+    private String impactHash;
 }

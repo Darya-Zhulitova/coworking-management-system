@@ -35,6 +35,9 @@ public class Floor {
     @Column(name = "image_file_id")
     private String imageFileId;
 
+    @Column(name = "full_image_file_id")
+    private String fullImageFileId;
+
     @Column(nullable = false)
     private Boolean active;
 

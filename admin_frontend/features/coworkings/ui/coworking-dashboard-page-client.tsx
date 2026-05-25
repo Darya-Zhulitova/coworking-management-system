@@ -87,7 +87,7 @@ export function CoworkingDashboardPageClient({ coworkingId }: { coworkingId: num
                   ))}
                 </ListGroup>
               ) : (
-                <Alert variant="secondary" className="mb-0">Для этой учётной записи права не определены.</Alert>
+                <Alert variant="secondary" className="mb-0">Для этой учетной записи права не определены.</Alert>
               )}
             </Card.Body>
           </Card>

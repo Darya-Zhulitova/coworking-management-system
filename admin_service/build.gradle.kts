@@ -22,9 +22,13 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    runtimeOnly("com.h2database:h2")
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql")
+    runtimeOnly("org.postgresql:postgresql")
 
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("software.amazon.awssdk:s3:2.44.6")
+    implementation("com.twelvemonkeys.imageio:imageio-webp:3.12.0")
 
     implementation("io.jsonwebtoken:jjwt-api:0.12.7")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.7")
@@ -36,6 +40,7 @@ dependencies {
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("com.h2database:h2:2.2.224")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

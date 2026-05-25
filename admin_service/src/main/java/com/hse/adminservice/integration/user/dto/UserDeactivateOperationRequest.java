@@ -12,6 +12,7 @@ public record UserDeactivateOperationRequest(
         String placeName,
         Long targetId,
         String targetName,
-        List<LocalDate> affectedDates
+        List<LocalDate> affectedDates,
+        String impactHash
 ) {
 }

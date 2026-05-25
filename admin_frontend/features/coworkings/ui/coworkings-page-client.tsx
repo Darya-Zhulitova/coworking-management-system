@@ -105,7 +105,7 @@ export function CoworkingsPageClient() {
                   ))}
                 </ListGroup>
               ) : (
-                <Alert variant="secondary" className="mb-0">Для текущей учётной записи нет доступных
+                <Alert variant="secondary" className="mb-0">Для текущей учетной записи нет доступных
                   коворкингов.</Alert>
               )}
             </CardBody>

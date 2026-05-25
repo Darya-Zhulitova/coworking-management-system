@@ -6,6 +6,7 @@ import com.hse.adminservice.calendar.exception.domain.ScheduleExceptionType;
 import com.hse.adminservice.calendar.exception.dto.CoworkingScheduleExceptionCreateRequest;
 import com.hse.adminservice.calendar.exception.dto.CoworkingScheduleExceptionResponse;
 import com.hse.adminservice.calendar.exception.persistence.CoworkingScheduleExceptionRepository;
+import com.hse.adminservice.common.error.ConflictException;
 import com.hse.adminservice.common.error.ResourceNotFoundException;
 import com.hse.adminservice.common.time.TimeProvider;
 import com.hse.adminservice.coworking.application.CoworkingConfigurationVersionService;
@@ -17,7 +18,10 @@ import com.hse.adminservice.rbac.authorization.AdminAuthorizationService;
 import com.hse.adminservice.rbac.domain.Grant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,6 +38,7 @@ public class ScheduleExceptionCommandService {
     private final ScheduleExceptionValidator scheduleExceptionValidator;
     private final OperationalImpactResponseFactory impactResponseFactory;
     private final TimeProvider timeProvider;
+    private final PlatformTransactionManager transactionManager;
 
     public List<CoworkingScheduleExceptionResponse> getExceptions(Long coworkingId) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.SCHEDULE_READ);
@@ -49,6 +54,9 @@ public class ScheduleExceptionCommandService {
             CoworkingScheduleExceptionCreateRequest request
     ) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.SCHEDULE_EDIT);
+        if (request.getType() == ScheduleExceptionType.CLOSE) {
+            throw new ConflictException("Сначала выполните предпросмотр изменений, затем подтвердите действие.");
+        }
         Coworking coworking = getCoworking(coworkingId);
         scheduleExceptionValidator.ensureCanBeCreated(coworkingId, request.getDate());
         CoworkingScheduleException entity = saveException(coworking, request);
@@ -76,7 +84,7 @@ public class ScheduleExceptionCommandService {
         );
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public OperationalImpactResponse commitExceptionCreate(
             Long coworkingId,
             CoworkingScheduleExceptionCreateRequest request
@@ -84,31 +92,53 @@ public class ScheduleExceptionCommandService {
         authorizationService.requireCoworkingAction(coworkingId, Grant.SCHEDULE_EDIT);
         Coworking coworking = getCoworking(coworkingId);
         scheduleExceptionValidator.ensureCanBeCreated(coworkingId, request.getDate());
-        OperationalImpactResponse impact = request.getType() == ScheduleExceptionType.CLOSE ? userBookingImpactPort.commitCloseDay(
-                coworking,
-                request.getDate(),
-                request.getName().trim()
-        ) : impactResponseFactory.noImpact(
-                "SCHEDULE_EXCEPTION",
-                "COWORKING_SCHEDULE_EXCEPTION",
-                coworking.getId(),
-                request.getName().trim(),
-                request.getDate(),
-                "COMMIT"
-        );
-        saveException(coworking, request);
-        configurationVersionService.bumpVersion(coworkingId);
+        OperationalImpactResponse impact;
+        if (request.getType() == ScheduleExceptionType.CLOSE) {
+            String impactHash = requireImpactHash(request.getImpactHash());
+            impact = userBookingImpactPort.commitCloseDay(
+                    coworking,
+                    request.getDate(),
+                    request.getName().trim(),
+                    impactHash
+            );
+        } else {
+            validateNoImpactHash(request.getImpactHash());
+            impact = impactResponseFactory.noImpact(
+                    "SCHEDULE_EXCEPTION",
+                    "COWORKING_SCHEDULE_EXCEPTION",
+                    coworking.getId(),
+                    request.getName().trim(),
+                    request.getDate(),
+                    "COMMIT"
+            );
+        }
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> saveCommittedException(
+                coworkingId,
+                request
+        ));
         return impact;
+    }
+
+    private String requireImpactHash(String impactHash) {
+        if (impactHash == null || impactHash.isBlank()) {
+            throw new ConflictException("Сначала выполните предпросмотр изменений, затем подтвердите действие.");
+        }
+        return impactHash.trim();
+    }
+
+    private void validateNoImpactHash(String impactHash) {
+        if (!"NO_IMPACT".equals(impactHash == null ? null : impactHash.trim())) {
+            throw new ConflictException("Сначала выполните предпросмотр изменений, затем подтвердите действие.");
+        }
     }
 
     @Transactional
     public void archiveException(Long coworkingId, Long exceptionId) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.SCHEDULE_EDIT);
         CoworkingScheduleException entity = exceptionRepository.findByIdAndCoworkingIdAndArchivedFalse(
-                        exceptionId,
-                        coworkingId
-                )
-                .orElseThrow(() -> new ResourceNotFoundException("Schedule exception not found"));
+                exceptionId,
+                coworkingId
+        ).orElseThrow(() -> new ResourceNotFoundException("Исключение расписания не найдено"));
         LocalDateTime now = timeProvider.now();
         entity.setActive(false);
         entity.setArchived(true);
@@ -135,9 +165,28 @@ public class ScheduleExceptionCommandService {
                 .build());
     }
 
+    private void saveCommittedException(Long coworkingId, CoworkingScheduleExceptionCreateRequest request) {
+        Coworking coworking = getCoworkingForUpdate(coworkingId);
+        scheduleExceptionValidator.ensureCanBeCreated(coworkingId, request.getDate());
+        saveException(coworking, request);
+        bumpVersion(coworking);
+        coworkingRepository.save(coworking);
+    }
+
+    private void bumpVersion(Coworking coworking) {
+        long nextVersion = (coworking.getConfigurationVersion() == null ? 0L : coworking.getConfigurationVersion()) + 1L;
+        coworking.setConfigurationVersion(nextVersion);
+        coworking.setUpdatedAt(timeProvider.now());
+    }
+
     private Coworking getCoworking(Long coworkingId) {
         return coworkingRepository.findByIdAndArchivedFalse(coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
+    }
+
+    private Coworking getCoworkingForUpdate(Long coworkingId) {
+        return coworkingRepository.findByIdAndArchivedFalseForUpdate(coworkingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
     }
 
     private CoworkingScheduleExceptionResponse toExceptionResponse(CoworkingScheduleException entity) {

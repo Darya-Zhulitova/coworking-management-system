@@ -17,8 +17,8 @@ public class CoworkingConfigurationVersionService {
 
     @Transactional
     public void bumpVersion(Long coworkingId) {
-        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+        Coworking coworking = coworkingRepository.findByIdAndArchivedFalseForUpdate(coworkingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
 
         long nextVersion = (coworking.getConfigurationVersion() == null ? 0L : coworking.getConfigurationVersion()) + 1L;
         coworking.setConfigurationVersion(nextVersion);

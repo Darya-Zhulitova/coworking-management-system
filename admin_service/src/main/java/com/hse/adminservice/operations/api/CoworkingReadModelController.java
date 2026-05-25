@@ -1,19 +1,26 @@
 package com.hse.adminservice.operations.api;
 
-import com.hse.adminservice.operations.analytics.dto.UserAnalyticsResponse;
 import com.hse.adminservice.operations.application.CoworkingReadModelService;
+import com.hse.adminservice.operations.bookingimpact.dto.ImpactCommitRequest;
+import com.hse.adminservice.operations.bookingimpact.dto.OperationalImpactResponse;
 import com.hse.adminservice.operations.bookingimpact.dto.PlaceOperationalResponse;
+import com.hse.adminservice.operations.common.DecisionRequest;
+import com.hse.adminservice.operations.dashboard.OperationsDashboardResponse;
+import com.hse.adminservice.operations.membership.dto.ManualBalanceAdjustmentRequest;
+import com.hse.adminservice.operations.membership.dto.MembershipListItemResponse;
+import com.hse.adminservice.operations.membership.dto.MembershipProfileResponse;
 import com.hse.adminservice.operations.queue.dto.MembershipQueueItemResponse;
 import com.hse.adminservice.operations.queue.dto.PayRequestQueueItemResponse;
 import com.hse.adminservice.operations.queue.dto.ServiceRequestQueueItemResponse;
-import com.hse.adminservice.operations.queue.dto.UserQueueSummaryResponse;
 import com.hse.adminservice.operations.servicedesk.dto.CreateServiceRequestMessageRequest;
-import com.hse.adminservice.operations.servicedesk.dto.ServiceRequestDetailResponse;
 import com.hse.adminservice.operations.servicedesk.dto.ServiceRequestMessageResponse;
+import com.hse.adminservice.operations.servicedesk.dto.ServiceRequestWorkspaceResponse;
 import com.hse.adminservice.operations.users.dto.CoworkingUserReadModelResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -28,89 +35,126 @@ public class CoworkingReadModelController {
         return readModelService.getUsers(coworkingId);
     }
 
-    @GetMapping("/users/summary")
-    public UserQueueSummaryResponse getUserQueueSummary(@PathVariable Long coworkingId) {
-        return readModelService.getUserQueueSummary(coworkingId);
+    @GetMapping("/memberships")
+    public List<MembershipListItemResponse> getMembershipList(
+            @PathVariable Long coworkingId,
+            @RequestParam(required = false) String search
+    ) {
+        return readModelService.getMembershipList(coworkingId, search);
     }
 
-    @GetMapping("/users/analytics")
-    public UserAnalyticsResponse getUserAnalytics(@PathVariable Long coworkingId) {
-        return readModelService.getUserAnalytics(coworkingId);
+    @GetMapping("/memberships/{membershipId}")
+    public MembershipProfileResponse getMembershipProfile(
+            @PathVariable Long coworkingId,
+            @PathVariable Long membershipId
+    ) {
+        return readModelService.getMembershipProfile(coworkingId, membershipId);
     }
 
-    @GetMapping("/users/memberships")
+    @PostMapping("/memberships/{membershipId}/balance-adjustments")
+    public MembershipProfileResponse adjustMembershipBalance(
+            @PathVariable Long coworkingId,
+            @PathVariable Long membershipId,
+            @Valid @RequestBody ManualBalanceAdjustmentRequest request
+    ) {
+        return readModelService.adjustMembershipBalance(coworkingId, membershipId, request);
+    }
+
+
+    @PostMapping("/memberships/{membershipId}/block-preview")
+    public OperationalImpactResponse previewMembershipBlock(
+            @PathVariable Long coworkingId,
+            @PathVariable Long membershipId
+    ) {
+        return readModelService.previewMembershipBlock(coworkingId, membershipId);
+    }
+
+    @PostMapping("/memberships/{membershipId}/block")
+    public OperationalImpactResponse blockMembership(
+            @PathVariable Long coworkingId,
+            @PathVariable Long membershipId,
+            @RequestBody @Valid ImpactCommitRequest request
+    ) {
+        return readModelService.blockMembership(coworkingId, membershipId, request);
+    }
+
+    @GetMapping("/operations-dashboard")
+    public OperationsDashboardResponse getOperationsDashboard(@PathVariable Long coworkingId) {
+        return readModelService.getOperationsDashboard(coworkingId);
+    }
+
+    @GetMapping("/membership-requests")
     public List<MembershipQueueItemResponse> getMembershipQueue(@PathVariable Long coworkingId) {
         return readModelService.getMembershipQueue(coworkingId);
     }
 
-    @PostMapping("/users/memberships/{membershipId}/approve")
+    @PostMapping("/membership-requests/{membershipId}/decision")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void approveMembership(@PathVariable Long coworkingId, @PathVariable Long membershipId) {
-        readModelService.approveMembership(coworkingId, membershipId);
+    public void decideMembership(
+            @PathVariable Long coworkingId,
+            @PathVariable Long membershipId,
+            @Valid @RequestBody DecisionRequest request
+    ) {
+        readModelService.decideMembership(coworkingId, membershipId, request);
     }
 
-    @PostMapping("/users/memberships/{membershipId}/reject")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void rejectMembership(@PathVariable Long coworkingId, @PathVariable Long membershipId) {
-        readModelService.rejectMembership(coworkingId, membershipId);
-    }
-
-    @GetMapping("/users/pay-requests")
+    @GetMapping("/pay-requests")
     public List<PayRequestQueueItemResponse> getPayRequestQueue(@PathVariable Long coworkingId) {
         return readModelService.getPayRequestQueue(coworkingId);
     }
 
-    @PostMapping("/users/pay-requests/{payRequestId}/approve")
+    @PostMapping("/pay-requests/{payRequestId}/decision")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void approvePayRequest(@PathVariable Long coworkingId, @PathVariable Long payRequestId) {
-        readModelService.approvePayRequest(coworkingId, payRequestId);
+    public void decidePayRequest(
+            @PathVariable Long coworkingId,
+            @PathVariable Long payRequestId,
+            @Valid @RequestBody DecisionRequest request
+    ) {
+        readModelService.decidePayRequest(coworkingId, payRequestId, request);
     }
 
-    @PostMapping("/users/pay-requests/{payRequestId}/reject")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void rejectPayRequest(@PathVariable Long coworkingId, @PathVariable Long payRequestId) {
-        readModelService.rejectPayRequest(coworkingId, payRequestId);
-    }
-
-    @GetMapping("/users/service-requests")
+    @GetMapping("/service-requests")
     public List<ServiceRequestQueueItemResponse> getServiceRequestQueue(@PathVariable Long coworkingId) {
         return readModelService.getServiceRequestQueue(coworkingId);
     }
 
-    @GetMapping("/users/service-requests/{serviceRequestId}")
-    public ServiceRequestDetailResponse getServiceRequestDetails(
+    @GetMapping("/service-requests/{serviceRequestId}/workspace")
+    public ServiceRequestWorkspaceResponse getServiceRequestWorkspace(
             @PathVariable Long coworkingId,
             @PathVariable Long serviceRequestId
     ) {
-        return readModelService.getServiceRequestDetails(coworkingId, serviceRequestId);
+        return readModelService.getServiceRequestWorkspace(coworkingId, serviceRequestId);
     }
 
-    @GetMapping("/users/service-requests/{serviceRequestId}/messages")
-    public List<ServiceRequestMessageResponse> getServiceRequestMessages(
-            @PathVariable Long coworkingId,
-            @PathVariable Long serviceRequestId
-    ) {
-        return readModelService.getServiceRequestMessages(coworkingId, serviceRequestId);
-    }
-
-    @PostMapping("/users/service-requests/{serviceRequestId}/messages")
+    @PostMapping(value = "/service-requests/{serviceRequestId}/messages", consumes = "multipart/form-data")
     @ResponseStatus(HttpStatus.CREATED)
     public ServiceRequestMessageResponse addServiceRequestMessage(
             @PathVariable Long coworkingId,
             @PathVariable Long serviceRequestId,
-            @RequestBody @jakarta.validation.Valid CreateServiceRequestMessageRequest request
+            @RequestParam(required = false) String text,
+            @RequestPart(required = false) MultipartFile file
     ) {
-        return readModelService.addServiceRequestMessage(coworkingId, serviceRequestId, request.getText().trim());
+        return readModelService.addServiceRequestMessage(coworkingId, serviceRequestId, text, file);
     }
 
-    @PostMapping("/users/service-requests/{serviceRequestId}/status/{status}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void advanceServiceRequest(
+    @PostMapping("/service-requests/{serviceRequestId}/messages")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ServiceRequestMessageResponse addJsonServiceRequestMessage(
             @PathVariable Long coworkingId,
             @PathVariable Long serviceRequestId,
-            @PathVariable String status
+            @RequestBody @Valid CreateServiceRequestMessageRequest request
     ) {
-        readModelService.advanceServiceRequest(coworkingId, serviceRequestId, status);
+        return readModelService.addServiceRequestMessage(coworkingId, serviceRequestId, request.getText(), null);
+    }
+
+    @PostMapping("/service-requests/{serviceRequestId}/decision")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void decideServiceRequest(
+            @PathVariable Long coworkingId,
+            @PathVariable Long serviceRequestId,
+            @Valid @RequestBody DecisionRequest request
+    ) {
+        readModelService.decideServiceRequest(coworkingId, serviceRequestId, request);
     }
 
     @GetMapping("/places/operational")

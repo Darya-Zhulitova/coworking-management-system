@@ -11,7 +11,7 @@ public class ServiceRequestTypeResponse {
     Long id;
     Long coworkingId;
     String name;
-    Integer cost;
+    Long cost;
     Integer version;
     Boolean active;
     Boolean archived;

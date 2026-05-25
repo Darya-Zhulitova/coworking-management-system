@@ -14,6 +14,6 @@ public class CurrentAdminService {
 
     public Admin getCurrentAdmin() {
         return adminRepository.findById(authenticatedAdminActorService.getSubjectId())
-                .orElseThrow(() -> new ResourceNotFoundException("Authenticated coworking admin not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Администратор коворкинга не найден"));
     }
 }

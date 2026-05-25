@@ -36,7 +36,7 @@ export function CoworkingServiceRequestsPageClient({ coworkingId }: { coworkingI
     };
   }, [coworkingId]);
 
-  if (contextLoading || loading) return <FullPageLoader label="Загрузка сервисных заявок..."/>;
+  if (contextLoading || loading) return <FullPageLoader label="Загрузка заявок..."/>;
   if (contextError || error) return <FullPageError
     message={contextError ?? error ?? 'Не удалось загрузить сервисные заявки.'}/>;
   if (!context || context.coworkingId == null) return <FullPageLoader label="Переход на страницу входа..."/>;

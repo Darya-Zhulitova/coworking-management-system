@@ -14,7 +14,7 @@ public class ScheduleExceptionValidator {
 
     public void ensureCanBeCreated(Long coworkingId, LocalDate date) {
         if (exceptionRepository.existsByCoworkingIdAndDateAndArchivedFalse(coworkingId, date)) {
-            throw new ConflictException("Schedule exception for this date already exists");
+            throw new ConflictException("Исключение расписания на эту дату уже существует.");
         }
     }
 }

@@ -48,7 +48,7 @@ export function CoworkingServiceRequestTypesPageClient({ coworkingId }: { cowork
   useEffect(() => {
     let mounted = true;
     load().catch((error) => {
-      if (mounted) setErrorMessage(error instanceof Error ? error.message : 'Не удалось загрузить типы сервисных заявок.');
+      if (mounted) setErrorMessage(error instanceof Error ? error.message : 'Не удалось загрузить типы заявок.');
     }).finally(() => {
       if (mounted) setIsLoading(false);
     });
@@ -89,7 +89,7 @@ export function CoworkingServiceRequestTypesPageClient({ coworkingId }: { cowork
         body: JSON.stringify({ name: draft.name, cost: rublesInputToKopecks(draft.cost), active: draft.active }),
       });
       await load();
-      setSubmitMessage('Тип сервисной заявки обновлён.');
+      setSubmitMessage('Тип сервисной заявки обновлен.');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Не удалось обновить тип сервисной заявки.');
     } finally {
@@ -116,12 +116,13 @@ export function CoworkingServiceRequestTypesPageClient({ coworkingId }: { cowork
   if (!context || context.coworkingId == null) return <FullPageLoader label="Переход на страницу входа..."/>;
 
   return <main className="page-shell"><Container className="py-4 py-md-5"><Stack gap={4}>
-    <div><h2 className="mb-2">Типы сервисных заявок</h2><p className="mb-0 text-body-secondary">Шаблоны заявок, которые
-      копируются в пользовательские сервисные заявки при создании.</p></div>
+    <div><h2 className="mb-2">Типы сервисных заявок</h2><p className="mb-0 text-body-secondary">Шаблоны сервисных
+      заявок, которые
+      копируются в сервисные заявки пользователей при создании.</p></div>
     {submitMessage ? <Alert variant="success" className="mb-0">{submitMessage}</Alert> : null}
     {errorMessage ? <Alert variant="danger" className="mb-0">{errorMessage}</Alert> : null}
     <Card className="content-card"><Card.Body><Card.Title as="h2" className="h4 mb-3">Создать тип
-      заявки</Card.Title>{canManage ? <Form onSubmit={createItem}><Stack gap={3}><Form.Group
+      сервисной заявки</Card.Title>{canManage ? <Form onSubmit={createItem}><Stack gap={3}><Form.Group
         controlId="serviceRequestTypeName"><Form.Label>Название</Form.Label><Form.Control value={form.name}
                                                                                           onChange={(event) => setForm((current) => ({
                                                                                             ...current,
@@ -136,7 +137,7 @@ export function CoworkingServiceRequestTypesPageClient({ coworkingId }: { cowork
                                                                                                 cost: event.target.value
                                                                                               }))}
                                                                                               required/></Form.Group><Button
-        type="submit" disabled={savingId === 'create'}>Создать тип заявки</Button></Stack></Form> :
+        type="submit" disabled={savingId === 'create'}>Создать тип сервисной заявки</Button></Stack></Form> :
       <Alert variant="secondary" className="mb-0">Недостаточно прав для изменения.</Alert>}</Card.Body></Card>
     <Card className="content-card"><Card.Body><Card.Title as="h2" className="h4 mb-3">Типы сервисных заявок</Card.Title><Table
       responsive hover>

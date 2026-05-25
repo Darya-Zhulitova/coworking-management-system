@@ -10,14 +10,18 @@ import com.hse.adminservice.coworking.dto.CoworkingResponse;
 import com.hse.adminservice.coworking.dto.CoworkingUpdateRequest;
 import com.hse.adminservice.coworking.mapper.CoworkingMapper;
 import com.hse.adminservice.coworking.persistence.CoworkingRepository;
+import com.hse.adminservice.images.ImageFileKeys;
+import com.hse.adminservice.images.ImageStorageService;
 import com.hse.adminservice.rbac.application.AccessService;
 import com.hse.adminservice.rbac.authorization.AdminAuthorizationService;
 import com.hse.adminservice.rbac.domain.Grant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -31,6 +35,7 @@ public class CoworkingServiceImpl implements CoworkingService {
     private final AdminAuthorizationService authorizationService;
     private final CoworkingMapper coworkingMapper;
     private final TimeProvider timeProvider;
+    private final ImageStorageService imageStorageService;
 
     @Override
     @Transactional
@@ -45,10 +50,12 @@ public class CoworkingServiceImpl implements CoworkingService {
                 .workingHoursLabel(request.workingHoursLabel().trim())
                 .heroTitle(trimToNull(request.heroTitle()))
                 .heroText(trimToNull(request.heroText()))
-                .imageUrlsJson(coworkingMapper.writeImageUrls(request.imageUrls()))
+                .imageUrlsJson(coworkingMapper.writeImageUrls(List.of()))
+                .imageFileIdsJson(coworkingMapper.writeImageFileIds(List.of()))
                 .schedule(127)
                 .ownerId(currentAdminService.getCurrentAdmin().getId())
                 .autoApproveMembership(Boolean.TRUE.equals(request.autoApproveMembership()))
+                .floorMapEnabled(Boolean.TRUE.equals(request.floorMapEnabled()))
                 .active(true)
                 .archived(false)
                 .configurationVersion(0L)
@@ -76,7 +83,7 @@ public class CoworkingServiceImpl implements CoworkingService {
     public CoworkingResponse getById(Long id) {
         authorizationService.requireCoworkingAction(id, Grant.COWORKING_READ);
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
 
         return coworkingMapper.toResponse(coworking);
     }
@@ -85,8 +92,8 @@ public class CoworkingServiceImpl implements CoworkingService {
     @Transactional
     public CoworkingResponse update(Long id, CoworkingUpdateRequest request) {
         authorizationService.requireCoworkingAction(id, Grant.COWORKING_EDIT);
-        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+        Coworking coworking = coworkingRepository.findByIdAndArchivedFalseForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
 
         coworking.setName(request.name().trim());
         coworking.setDescription(request.description().trim());
@@ -94,13 +101,37 @@ public class CoworkingServiceImpl implements CoworkingService {
         coworking.setWorkingHoursLabel(request.workingHoursLabel().trim());
         coworking.setHeroTitle(trimToNull(request.heroTitle()));
         coworking.setHeroText(trimToNull(request.heroText()));
-        coworking.setImageUrlsJson(coworkingMapper.writeImageUrls(request.imageUrls()));
+        coworking.setImageUrlsJson(coworkingMapper.writeImageUrls(List.of()));
+        if (request.imageFileIds() != null) {
+            coworking.setImageFileIdsJson(coworkingMapper.writeImageFileIds(request.imageFileIds()));
+        }
         if (request.active() != null) {
             coworking.setActive(request.active());
         }
         if (request.autoApproveMembership() != null) {
             coworking.setAutoApproveMembership(request.autoApproveMembership());
         }
+        if (request.floorMapEnabled() != null) {
+            coworking.setFloorMapEnabled(request.floorMapEnabled());
+        }
+        bumpConfigurationVersion(coworking);
+        coworking.setUpdatedAt(timeProvider.now());
+
+        return coworkingMapper.toResponse(coworkingRepository.save(coworking));
+    }
+
+    @Override
+    @Transactional
+    public CoworkingResponse uploadPhoto(Long id, MultipartFile file) {
+        authorizationService.requireCoworkingAction(id, Grant.COWORKING_EDIT);
+        Coworking coworking = coworkingRepository.findByIdAndArchivedFalseForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
+
+        ImageFileKeys storedImage = imageStorageService.uploadCoworkingPhoto(coworking.getId(), file);
+        List<String> fileIds = new ArrayList<>(coworkingMapper.readImageFileIds(coworking.getImageFileIdsJson()));
+        fileIds.add(storedImage.fullKey());
+        coworking.setImageFileIdsJson(coworkingMapper.writeImageFileIds(fileIds));
+        bumpConfigurationVersion(coworking);
         coworking.setUpdatedAt(timeProvider.now());
 
         return coworkingMapper.toResponse(coworkingRepository.save(coworking));
@@ -110,8 +141,8 @@ public class CoworkingServiceImpl implements CoworkingService {
     @Transactional
     public void archive(Long id) {
         authorizationService.requireCoworkingAction(id, Grant.COWORKING_EDIT);
-        Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+        Coworking coworking = coworkingRepository.findByIdAndArchivedFalseForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
 
         coworking.setArchived(true);
         coworking.setArchivedAt(timeProvider.now());
@@ -125,7 +156,7 @@ public class CoworkingServiceImpl implements CoworkingService {
     public CoworkingDashboardResponse getDashboard(Long id) {
         var context = authorizationService.requireCoworkingAction(id, Grant.COWORKING_READ);
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
 
         return CoworkingDashboardResponse.builder()
                 .coworking(coworkingMapper.toResponse(coworking))
@@ -147,6 +178,11 @@ public class CoworkingServiceImpl implements CoworkingService {
                 .filter(Coworking::getArchived)
                 .ifPresent(c -> items.putIfAbsent(c.getId(), c)));
         return items.values().stream().map(coworkingMapper::toResponse).toList();
+    }
+
+    private void bumpConfigurationVersion(Coworking coworking) {
+        long current = coworking.getConfigurationVersion() == null ? 0L : coworking.getConfigurationVersion();
+        coworking.setConfigurationVersion(current + 1L);
     }
 
     private String trimToNull(String value) {

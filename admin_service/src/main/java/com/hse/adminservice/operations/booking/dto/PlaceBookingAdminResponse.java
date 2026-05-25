@@ -7,6 +7,7 @@ import java.time.LocalDate;
 @Builder
 public record PlaceBookingAdminResponse(
         Long bookingId,
+        String bookingNumber,
         Long membershipId,
         String userName,
         LocalDate date,

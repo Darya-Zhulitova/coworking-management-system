@@ -42,6 +42,7 @@ export function CoworkingServiceRequestDetailPageClient({ coworkingId, serviceRe
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [messageText, setMessageText] = useState('');
+  const [messageFile, setMessageFile] = useState<File | null>(null);
   const [submittingMessage, setSubmittingMessage] = useState(false);
   const [changingStatus, setChangingStatus] = useState<string | null>(null);
 
@@ -64,7 +65,7 @@ export function CoworkingServiceRequestDetailPageClient({ coworkingId, serviceRe
     Promise.all([loadDetail(), loadMessages()])
       .catch((err: unknown) => {
         if (!mounted) return;
-        setError(err instanceof ClientRequestError ? err.message : 'Не удалось загрузить заявку.');
+        setError(err instanceof ClientRequestError ? err.message : 'Не удалось загрузить сервисную заявку.');
       })
       .finally(() => {
         if (mounted) {
@@ -95,13 +96,13 @@ export function CoworkingServiceRequestDetailPageClient({ coworkingId, serviceRe
       await Promise.all([loadDetail(), loadMessages()]);
       setActionMessage(
         status === 'in_progress'
-          ? 'Заявка принята в работу.'
+          ? 'Сервисная заявка принята в работу.'
           : status === 'resolved'
-            ? 'Заявка закрыта.'
-            : 'Заявка отклонена.'
+            ? 'Сервисная заявка закрыта.'
+            : 'Сервисная заявка отклонена.'
       );
     } catch (err) {
-      setActionError(err instanceof ClientRequestError ? err.message : 'Не удалось изменить статус заявки.');
+      setActionError(err instanceof ClientRequestError ? err.message : 'Не удалось изменить статус сервисной заявки.');
     } finally {
       setChangingStatus(null);
     }
@@ -109,17 +110,20 @@ export function CoworkingServiceRequestDetailPageClient({ coworkingId, serviceRe
 
   async function handleSendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!messageText.trim()) return;
+    if (!messageText.trim() && !messageFile) return;
     setActionError(null);
     setActionMessage(null);
     setSubmittingMessage(true);
     try {
+      const formData = new FormData();
+      if (messageText.trim()) formData.set('text', messageText.trim());
+      if (messageFile) formData.set('file', messageFile);
       await requestJson(`/api/coworkings/${coworkingId}/users/service-requests/${serviceRequestId}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: messageText.trim() }),
+        body: formData,
       });
       setMessageText('');
+      setMessageFile(null);
       await Promise.all([loadDetail(), loadMessages()]);
       setActionMessage('Сообщение отправлено.');
     } catch (err) {
@@ -129,8 +133,9 @@ export function CoworkingServiceRequestDetailPageClient({ coworkingId, serviceRe
     }
   }
 
-  if (contextLoading || loading) return <FullPageLoader label="Загрузка заявки..."/>;
-  if (contextError || error) return <FullPageError message={contextError ?? error ?? 'Не удалось загрузить заявку.'}/>;
+  if (contextLoading || loading) return <FullPageLoader label="Загрузка сервисной заявки..."/>;
+  if (contextError || error) return <FullPageError
+    message={contextError ?? error ?? 'Не удалось загрузить сервисную заявку.'}/>;
   if (!context || context.coworkingId == null || !detail) return <FullPageLoader label="Переход на страницу входа..."/>;
 
   const isFinal = detail.status === 'resolved' || detail.status === 'rejected';
@@ -153,7 +158,8 @@ export function CoworkingServiceRequestDetailPageClient({ coworkingId, serviceRe
       </div>
       {actionMessage ? <Alert variant="success" className="mb-0">{actionMessage}</Alert> : null}{actionError ?
       <Alert variant="danger" className="mb-0">{actionError}</Alert> : null}{insufficientBalance && !isFinal ?
-      <Alert variant="warning" className="mb-0">Эту платную заявку сейчас нельзя закрыть, потому что у пользователя
+      <Alert variant="warning" className="mb-0">Эту платную сервисную заявку сейчас нельзя закрыть, потому что у
+        пользователя
         недостаточно средств.</Alert> : null}<Row className="g-4"><Col lg={6}><Card className="h-100"><Card.Body><Stack
       gap={2}>
       <div><span className="text-body-secondary">Пользователь:</span> {detail.userName}</div>
@@ -173,12 +179,12 @@ export function CoworkingServiceRequestDetailPageClient({ coworkingId, serviceRe
       <div className="d-flex flex-wrap gap-2">{canTakeInWork ?
         <Button variant="outline-primary" disabled={changingStatus !== null}
                 onClick={() => handleStatusChange('in_progress')}>Взять в работу</Button> : null}{canClose ?
-        <Button variant="success" disabled={changingStatus !== null}
+        <Button variant="outline-primary" disabled={changingStatus !== null}
                 onClick={() => handleStatusChange('resolved')}>Закрыть</Button> :
-        <Button variant="success" disabled>Закрыть</Button>}{canReject ?
-        <Button variant="outline-danger" disabled={changingStatus !== null}
+        <Button variant="outline-primary" disabled>Закрыть</Button>}{canReject ?
+        <Button variant="outline-primary" disabled={changingStatus !== null}
                 onClick={() => handleStatusChange('rejected')}>Отклонить</Button> : null}</div>
-      {isFinal ? <Alert variant="secondary" className="mb-0">Финальные заявки доступны только для
+      {isFinal ? <Alert variant="secondary" className="mb-0">Финальные сервисные заявки доступны только для
         просмотра.</Alert> : null}{!canEdit ?
       <Alert variant="secondary" className="mb-0">У вас нет прав на изменение.</Alert> : null}
     </Stack></Card.Body></Card></Col></Row></Stack></Card.Body></Card><Card
@@ -188,19 +194,27 @@ export function CoworkingServiceRequestDetailPageClient({ coworkingId, serviceRe
     </div>
     <div className="d-grid gap-3">{messages.length === 0 ?
       <div className="text-body-secondary">Сообщений пока нет.</div> : messages.map((message) => <div
-        key={message.messageId} className="border rounded-4 p-3">
+        key={message.id} className="border rounded-4 p-3">
         <div className="d-flex justify-content-between align-items-start gap-3 mb-2">
           <div className="fw-semibold">{message.authorName || formatMessageAuthorType(message.authorType)}</div>
-          <div className="small text-body-secondary">{formatDateTime(message.timestamp)}</div>
+          <div className="small text-body-secondary">{formatDateTime(message.createdAt)}</div>
         </div>
-        <div>{message.text}</div>
+        {message.text ? <div>{message.text}</div> : null}
+        {message.attachments?.length ?
+          <div className="d-grid gap-2 mt-2">{message.attachments.map((attachment) => <a key={attachment.id}
+                                                                                         href={attachment.url}
+                                                                                         target="_blank"
+                                                                                         rel="noreferrer"
+                                                                                         className="btn btn-sm btn-outline-secondary text-start">📎 {attachment.fileName}</a>)}</div> : null}
       </div>)}</div>
     <Form onSubmit={handleSendMessage}><Stack gap={2}><Form.Control as="textarea" rows={3} value={messageText}
                                                                     onChange={(event) => setMessageText(event.target.value)}
                                                                     placeholder="Введите сообщение пользователю"
                                                                     disabled={!canEdit || isFinal || submittingMessage}/>
+      <Form.Control type="file" disabled={!canEdit || isFinal || submittingMessage}
+                    onChange={(event) => setMessageFile(event.currentTarget.files?.[0] ?? null)}/>
       <div className="d-flex justify-content-end"><Button type="submit"
-                                                          disabled={!canEdit || isFinal || submittingMessage || !messageText.trim()}>{submittingMessage ? 'Отправка...' : 'Отправить сообщение'}</Button>
+                                                          disabled={!canEdit || isFinal || submittingMessage || (!messageText.trim() && !messageFile)}>{submittingMessage ? 'Отправка...' : 'Отправить сообщение'}</Button>
       </div>
     </Stack></Form></Stack></Card.Body></Card></Stack></Container></main>;
 }

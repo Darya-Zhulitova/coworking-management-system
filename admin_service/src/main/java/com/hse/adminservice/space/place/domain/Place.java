@@ -46,6 +46,15 @@ public class Place {
     @Column(name = "loc_y", precision = 10, scale = 4)
     private BigDecimal locY;
 
+    @Column(name = "image_file_id", length = 500)
+    private String imageFileId;
+
+    @Column(name = "preview_image_file_id", length = 500)
+    private String previewImageFileId;
+
+    @Column(name = "full_image_file_id", length = 500)
+    private String fullImageFileId;
+
     @Column(name = "amenities_raw", length = 1000)
     private String amenitiesRaw;
 

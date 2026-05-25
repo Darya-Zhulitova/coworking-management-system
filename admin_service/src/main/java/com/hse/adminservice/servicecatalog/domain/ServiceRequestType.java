@@ -31,7 +31,7 @@ public class ServiceRequestType {
     private String name;
 
     @Column(nullable = false)
-    private Integer cost;
+    private Long cost;
 
     @Column(name = "type_version", nullable = false)
     private Integer version;

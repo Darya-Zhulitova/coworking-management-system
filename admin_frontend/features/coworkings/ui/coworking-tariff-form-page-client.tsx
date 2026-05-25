@@ -20,13 +20,11 @@ import { kopecksToRublesInput, rublesInputToKopecks } from '@/lib/format/money';
 const defaultForm = {
   name: '',
   pricePerDay: '0',
-  minBookingDays: '1',
   fullRefundHoursBefore: '24',
   lateCancellationRefundPercent: '0',
   cancellationCompensationCoefficient: '0',
   dayClosureCompensationCoefficient: '0',
   membershipBlockCompensationCoefficient: '0',
-  discountRules: [{ thresholdQuantity: '2', discountPercent: '10' }],
   active: true,
 };
 
@@ -36,18 +34,11 @@ function toFormState(tariff: TariffDto): TariffFormState {
   return {
     name: tariff.name,
     pricePerDay: kopecksToRublesInput(tariff.pricePerDay),
-    minBookingDays: String(tariff.minBookingDays),
     fullRefundHoursBefore: String(tariff.fullRefundHoursBefore),
     lateCancellationRefundPercent: String(tariff.lateCancellationRefundPercent),
     cancellationCompensationCoefficient: String(tariff.cancellationCompensationCoefficient),
     dayClosureCompensationCoefficient: String(tariff.dayClosureCompensationCoefficient),
     membershipBlockCompensationCoefficient: String(tariff.membershipBlockCompensationCoefficient),
-    discountRules: tariff.discountRules.length > 0
-      ? tariff.discountRules.map((rule) => ({
-        thresholdQuantity: String(rule.thresholdQuantity),
-        discountPercent: String(rule.discountPercent)
-      }))
-      : [],
     active: tariff.active,
   };
 }
@@ -56,18 +47,11 @@ function normalizePayload(form: TariffFormState) {
   return {
     name: form.name.trim(),
     pricePerDay: rublesInputToKopecks(form.pricePerDay),
-    minBookingDays: Number(form.minBookingDays),
     fullRefundHoursBefore: Number(form.fullRefundHoursBefore),
     lateCancellationRefundPercent: Number(form.lateCancellationRefundPercent),
     cancellationCompensationCoefficient: Number(form.cancellationCompensationCoefficient),
     dayClosureCompensationCoefficient: Number(form.dayClosureCompensationCoefficient),
     membershipBlockCompensationCoefficient: Number(form.membershipBlockCompensationCoefficient),
-    discountRules: form.discountRules
-      .filter((rule) => rule.thresholdQuantity.trim() !== '' && rule.discountPercent.trim() !== '')
-      .map((rule) => ({
-        thresholdQuantity: Number(rule.thresholdQuantity),
-        discountPercent: Number(rule.discountPercent),
-      })),
     active: form.active,
   };
 }
@@ -76,8 +60,6 @@ function validateTariffForm(form: TariffFormState): string | null {
   if (!form.name.trim()) return 'Название тарифа обязательно.';
   const pricePerDay = rublesInputToKopecks(form.pricePerDay);
   if (!Number.isFinite(pricePerDay) || pricePerDay < 0) return 'Цена за день должна быть корректной суммой в рублях и не меньше нуля.';
-  const minBookingDays = Number(form.minBookingDays);
-  if (!Number.isInteger(minBookingDays) || minBookingDays < 1) return 'Минимальное число дней бронирования должно быть не меньше 1.';
   const fullRefundHoursBefore = Number(form.fullRefundHoursBefore);
   if (!Number.isInteger(fullRefundHoursBefore) || fullRefundHoursBefore < 0) return 'Часы до полного возврата должны быть не меньше нуля.';
   const lateCancellationRefundPercent = Number(form.lateCancellationRefundPercent);
@@ -92,27 +74,6 @@ function validateTariffForm(form: TariffFormState): string | null {
   ] as const;
   for (const [label, value] of coefficients) {
     if (!Number.isFinite(value) || value < 0) return `${label} должен быть не меньше нуля.`;
-  }
-
-  let previousThreshold: number | null = null;
-  let previousDiscount: number | null = null;
-  for (const [index, rule] of form.discountRules.entries()) {
-    const threshold = Number(rule.thresholdQuantity);
-    const discount = Number(rule.discountPercent);
-    if (!Number.isInteger(threshold) || threshold < 1) {
-      return `Правило скидки №${index + 1}: порог количества должен быть не меньше 1.`;
-    }
-    if (!Number.isInteger(discount) || discount < 0 || discount > 100) {
-      return `Правило скидки №${index + 1}: процент скидки должен быть от 0 до 100.`;
-    }
-    if (previousThreshold != null && threshold <= previousThreshold) {
-      return 'Правила скидок должны быть упорядочены по строго возрастающему порогу количества.';
-    }
-    if (previousDiscount != null && discount <= previousDiscount) {
-      return 'Процент скидки должен строго расти вместе с порогом количества.';
-    }
-    previousThreshold = threshold;
-    previousDiscount = discount;
   }
 
   return null;
@@ -154,30 +115,6 @@ export function CoworkingTariffFormPageClient({ coworkingId, tariffId }: { cowor
     };
   }, [coworkingId, isEditMode, tariffId]);
 
-  function updateDiscountRule(index: number, field: 'thresholdQuantity' | 'discountPercent', value: string) {
-    setForm((current) => ({
-      ...current,
-      discountRules: current.discountRules.map((rule, ruleIndex) => (ruleIndex === index ? {
-        ...rule,
-        [field]: value
-      } : rule)),
-    }));
-  }
-
-  function addDiscountRule() {
-    setForm((current) => ({
-      ...current,
-      discountRules: [...current.discountRules, { thresholdQuantity: '', discountPercent: '' }]
-    }));
-  }
-
-  function removeDiscountRule(index: number) {
-    setForm((current) => ({
-      ...current,
-      discountRules: current.discountRules.filter((_, ruleIndex) => ruleIndex !== index)
-    }));
-  }
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const validationMessage = validateTariffForm(form);
@@ -201,7 +138,7 @@ export function CoworkingTariffFormPageClient({ coworkingId, tariffId }: { cowor
       );
       setForm(toFormState(response));
       setCurrentVersion(response.version);
-      setSuccessMessage(isEditMode ? 'Тариф обновлён.' : 'Тариф создан.');
+      setSuccessMessage(isEditMode ? 'Тариф обновлен.' : 'Тариф создан.');
       if (!isEditMode) {
         router.replace(`/coworkings/${coworkingId}/settings/tariffs/${response.id}`);
         router.refresh();
@@ -227,7 +164,7 @@ export function CoworkingTariffFormPageClient({ coworkingId, tariffId }: { cowor
           <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
             <div><h2 className="mb-2">{isEditMode ? 'Редактировать тариф' : 'Создать тариф'}</h2><p
               className="mb-0 text-body-secondary">Настройка стоимости, правил возврата, компенсаций и порогов
-              скидок.</p></div>
+              ценообразования.</p></div>
             <Stack direction="horizontal" gap={2} className="flex-wrap">
               {currentVersion != null ? <Badge bg="info">Версия {currentVersion}</Badge> : null}
               <Button variant="outline-secondary"
@@ -255,16 +192,6 @@ export function CoworkingTariffFormPageClient({ coworkingId, tariffId }: { cowor
                                       onChange={(event) => setForm((current) => ({
                                         ...current,
                                         pricePerDay: event.target.value
-                                      }))}/>
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group controlId="min-booking-days">
-                        <Form.Label>Минимальное число дней бронирования</Form.Label>
-                        <Form.Control type="number" min={1} value={form.minBookingDays}
-                                      onChange={(event) => setForm((current) => ({
-                                        ...current,
-                                        minBookingDays: event.target.value
                                       }))}/>
                       </Form.Group>
                     </Col>
@@ -321,48 +248,6 @@ export function CoworkingTariffFormPageClient({ coworkingId, tariffId }: { cowor
                       </Form.Group>
                     </Col>
                   </Row>
-                  <Card bg="light" className="border-0">
-                    <Card.Body>
-                      <Stack gap={3}>
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div>
-                            <div className="fw-semibold">Правила скидок</div>
-                            <div className="text-body-secondary small">Правила должны идти по возрастанию порога
-                              количества и процента скидки.
-                            </div>
-                          </div>
-                          <Button variant="outline-primary" size="sm" onClick={addDiscountRule}>Добавить
-                            правило</Button>
-                        </div>
-                        {form.discountRules.length === 0 ?
-                          <div className="text-body-secondary small">Правила скидок не настроены.</div> : null}
-                        {form.discountRules.map((rule, index) => (
-                          <Row className="g-3 align-items-end" key={`discount-rule-${index}`}>
-                            <Col md={5}>
-                              <Form.Group controlId={`discount-threshold-${index}`}>
-                                <Form.Label>Порог количества</Form.Label>
-                                <Form.Control type="number" min={1} value={rule.thresholdQuantity}
-                                              onChange={(event) => updateDiscountRule(index, 'thresholdQuantity', event.target.value)}/>
-                              </Form.Group>
-                            </Col>
-                            <Col md={5}>
-                              <Form.Group controlId={`discount-percent-${index}`}>
-                                <Form.Label>Процент скидки</Form.Label>
-                                <Form.Control type="number" min={0} max={100} value={rule.discountPercent}
-                                              onChange={(event) => updateDiscountRule(index, 'discountPercent', event.target.value)}/>
-                              </Form.Group>
-                            </Col>
-                            <Col md={2}>
-                              <Button variant="outline-danger" onClick={() => removeDiscountRule(index)}
-                                      disabled={form.discountRules.length === 1 && rule.thresholdQuantity === '' && rule.discountPercent === ''}>
-                                Удалить
-                              </Button>
-                            </Col>
-                          </Row>
-                        ))}
-                      </Stack>
-                    </Card.Body>
-                  </Card>
                   <Form.Check
                     type="switch"
                     id="tariff-active"

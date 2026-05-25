@@ -1,6 +1,7 @@
 package com.hse.adminservice.space.place.api;
 
 import com.hse.adminservice.operations.booking.dto.PlaceBookingListResponse;
+import com.hse.adminservice.operations.bookingimpact.dto.ImpactCommitRequest;
 import com.hse.adminservice.operations.bookingimpact.dto.OperationalImpactResponse;
 import com.hse.adminservice.space.place.application.PlaceService;
 import com.hse.adminservice.space.place.dto.PlaceCreateRequest;
@@ -10,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -43,6 +45,15 @@ public class PlaceController {
         return placeService.getById(coworkingId, placeId);
     }
 
+    @PostMapping("/{placeId}/photo")
+    public PlaceResponse uploadPhoto(
+            @PathVariable Long coworkingId,
+            @PathVariable Long placeId,
+            @RequestParam("file") MultipartFile file
+    ) {
+        return placeService.uploadPhoto(coworkingId, placeId, file);
+    }
+
     @PutMapping("/{placeId}")
     public PlaceResponse update(
             @PathVariable Long coworkingId,
@@ -52,14 +63,18 @@ public class PlaceController {
         return placeService.update(coworkingId, placeId, request);
     }
 
-    @PostMapping("/{placeId}/deactivate/preview")
+    @PostMapping("/{placeId}/deactivation/preview")
     public OperationalImpactResponse previewDeactivate(@PathVariable Long coworkingId, @PathVariable Long placeId) {
         return placeService.previewDeactivate(coworkingId, placeId);
     }
 
-    @PostMapping("/{placeId}/deactivate/commit")
-    public OperationalImpactResponse commitDeactivate(@PathVariable Long coworkingId, @PathVariable Long placeId) {
-        return placeService.commitDeactivate(coworkingId, placeId);
+    @PostMapping("/{placeId}/deactivation/commit")
+    public OperationalImpactResponse commitDeactivate(
+            @PathVariable Long coworkingId,
+            @PathVariable Long placeId,
+            @Valid @RequestBody ImpactCommitRequest request
+    ) {
+        return placeService.commitDeactivate(coworkingId, placeId, request.getImpactHash());
     }
 
     @PostMapping("/{placeId}/activate")

@@ -1,6 +1,7 @@
 package com.hse.adminservice.space.place.application;
 
 import com.hse.adminservice.common.error.ResourceNotFoundException;
+import com.hse.adminservice.integration.user.port.UserOperationsClient;
 import com.hse.adminservice.operations.booking.dto.PlaceBookingListResponse;
 import com.hse.adminservice.rbac.authorization.AdminAuthorizationService;
 import com.hse.adminservice.rbac.domain.Grant;
@@ -21,6 +22,7 @@ public class PlaceQueryService {
     private final PlaceRepository placeRepository;
     private final AdminAuthorizationService authorizationService;
     private final PlaceMapper placeMapper;
+    private final UserOperationsClient userOperationsClient;
 
     public List<PlaceResponse> getAll(Long coworkingId, Long placeTypeId) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_READ);
@@ -39,17 +41,11 @@ public class PlaceQueryService {
     public PlaceBookingListResponse getBookings(Long coworkingId, Long placeId) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.BOOKING_READ);
         Place place = getExistingPlace(coworkingId, placeId);
-        return PlaceBookingListResponse.builder()
-                .coworkingId(coworkingId)
-                .placeId(place.getId())
-                .source("stub")
-                .message(null)
-                .bookings(List.of())
-                .build();
+        return userOperationsClient.getPlaceBookings(coworkingId, place.getId());
     }
 
     Place getExistingPlace(Long coworkingId, Long placeId) {
         return placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Place not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Место не найдено"));
     }
 }

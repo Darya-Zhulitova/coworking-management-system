@@ -11,7 +11,10 @@ import com.hse.adminservice.space.place.domain.Place;
 import com.hse.adminservice.space.place.persistence.PlaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +25,7 @@ public class PlaceDeactivationService {
     private final UserBookingImpactPort userBookingImpactPort;
     private final CoworkingConfigurationVersionService configurationVersionService;
     private final TimeProvider timeProvider;
+    private final PlatformTransactionManager transactionManager;
 
     public OperationalImpactResponse previewDeactivate(Long coworkingId, Long placeId) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_EDIT);
@@ -29,20 +33,36 @@ public class PlaceDeactivationService {
         return userBookingImpactPort.previewForPlaceDeactivation(place);
     }
 
-    @Transactional
-    public OperationalImpactResponse commitDeactivate(Long coworkingId, Long placeId) {
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public OperationalImpactResponse commitDeactivate(Long coworkingId, Long placeId, String impactHash) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.PLACE_EDIT);
         Place place = getExistingPlace(coworkingId, placeId);
-        OperationalImpactResponse result = userBookingImpactPort.commitPlaceDeactivation(place);
+        OperationalImpactResponse result = userBookingImpactPort.commitPlaceDeactivation(place, impactHash);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> deactivatePlace(
+                coworkingId,
+                placeId
+        ));
+        return result;
+    }
+
+    private void deactivatePlace(Long coworkingId, Long placeId) {
+        Place place = getExistingPlaceForUpdate(coworkingId, placeId);
+        if (Boolean.FALSE.equals(place.getActive())) {
+            return;
+        }
         place.setActive(false);
         place.setUpdatedAt(timeProvider.now());
         placeRepository.save(place);
         configurationVersionService.bumpVersion(coworkingId);
-        return result;
     }
 
     private Place getExistingPlace(Long coworkingId, Long placeId) {
         return placeRepository.findByIdAndCoworkingIdAndArchivedFalse(placeId, coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Place not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Место не найдено"));
+    }
+
+    private Place getExistingPlaceForUpdate(Long coworkingId, Long placeId) {
+        return placeRepository.findByIdAndCoworkingIdAndArchivedFalseForUpdate(placeId, coworkingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Место не найдено"));
     }
 }

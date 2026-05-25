@@ -13,7 +13,7 @@ public record ServiceRequestDetailResponse(
         String userEmail,
         String typeName,
         String name,
-        Integer cost,
+        Long cost,
         Long balanceMinorUnits,
         String status,
         LocalDateTime createdAt,

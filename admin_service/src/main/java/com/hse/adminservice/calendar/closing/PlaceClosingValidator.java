@@ -14,7 +14,7 @@ public class PlaceClosingValidator {
 
     public void ensureCanBeCreated(Long placeId, LocalDate date) {
         if (placeClosingRepository.existsByPlaceIdAndDateAndArchivedFalse(placeId, date)) {
-            throw new ConflictException("Place closing for this date already exists");
+            throw new ConflictException("Закрытие места на эту дату уже существует.");
         }
     }
 }

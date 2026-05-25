@@ -14,7 +14,7 @@ import Table from 'react-bootstrap/Table';
 import { FullPageError, FullPageLoader } from '@/components/page-state';
 import { useAppContext } from '@/features/context/use-app-context';
 import { requestJson } from '@/lib/client/api';
-import { formatRublesFromKopecks } from '@/lib/format/money';
+import { OperationalImpactPreview } from '@/features/coworkings/ui/operational-impact-preview';
 import type {
   CoworkingScheduleDto,
   CoworkingScheduleExceptionDto,
@@ -41,7 +41,13 @@ const EMPTY_SCHEDULE: CoworkingScheduleDto = {
   sunday: false
 };
 
-type PendingOperation = { title: string; commitUrl: string; payload: unknown; afterCommit: () => void | Promise<void> };
+type PendingOperation = {
+  title: string;
+  commitUrl: string;
+  payload: Record<string, unknown>;
+  impactHash: string;
+  afterCommit: () => void | Promise<void>;
+};
 
 export function CoworkingSchedulePageClient({ coworkingId }: { coworkingId: number }) {
   const { context, isLoading: contextLoading, errorMessage: contextError } = useAppContext({
@@ -99,7 +105,7 @@ export function CoworkingSchedulePageClient({ coworkingId }: { coworkingId: numb
     };
   }
 
-  async function prepareImpact(title: string, previewUrl: string, commitUrl: string, payload: unknown, afterCommit: PendingOperation['afterCommit']) {
+  async function prepareImpact(title: string, previewUrl: string, commitUrl: string, payload: Record<string, unknown>, afterCommit: PendingOperation['afterCommit']) {
     setMessage(null);
     const response = await requestJson<OperationalImpactDto>(previewUrl, {
       method: 'POST',
@@ -107,13 +113,13 @@ export function CoworkingSchedulePageClient({ coworkingId }: { coworkingId: numb
       body: JSON.stringify(payload)
     });
     setImpact(response);
-    setPendingOperation({ title, commitUrl, payload, afterCommit });
+    setPendingOperation({ title, commitUrl, payload, impactHash: response.impactHash, afterCommit });
   }
 
   async function updateSchedule(event: React.FormEvent) {
     event.preventDefault();
     const payload = schedulePayload();
-    await prepareImpact('Подтвердить изменение расписания', `/api/coworkings/${coworkingId}/schedule/deactivate/preview`, `/api/coworkings/${coworkingId}/schedule/deactivate/commit`, payload, async () => {
+    await prepareImpact('Подтвердить изменение расписания', `/api/coworkings/${coworkingId}/schedule/preview`, `/api/coworkings/${coworkingId}/schedule/commit`, payload, async () => {
       await load();
       setMessage('Расписание обновлено.');
     });
@@ -123,7 +129,7 @@ export function CoworkingSchedulePageClient({ coworkingId }: { coworkingId: numb
     event.preventDefault();
 
     if (exceptionForm.type === 'CLOSE') {
-      await prepareImpact('Подтвердить добавление закрытия', `/api/coworkings/${coworkingId}/schedule/exceptions/deactivate/preview`, `/api/coworkings/${coworkingId}/schedule/exceptions/deactivate/commit`, exceptionForm, async () => {
+      await prepareImpact('Подтвердить добавление закрытия', `/api/coworkings/${coworkingId}/schedule/exceptions/preview`, `/api/coworkings/${coworkingId}/schedule/exceptions/commit`, exceptionForm, async () => {
         setExceptionForm({ date: '', type: 'CLOSE', name: '' });
         await load();
         setMessage('Исключение в расписании создано.');
@@ -144,7 +150,7 @@ export function CoworkingSchedulePageClient({ coworkingId }: { coworkingId: numb
   async function createClosing(event: React.FormEvent) {
     event.preventDefault();
     const payload = { ...closingForm, placeId: Number(closingForm.placeId) };
-    await prepareImpact('Подтвердить закрытие места', `/api/coworkings/${coworkingId}/schedule/closings/deactivate/preview`, `/api/coworkings/${coworkingId}/schedule/closings/deactivate/commit`, payload, async () => {
+    await prepareImpact('Подтвердить закрытие места', `/api/coworkings/${coworkingId}/schedule/closings/preview`, `/api/coworkings/${coworkingId}/schedule/closings/commit`, payload, async () => {
       setClosingForm({ placeId: places[0] ? String(places[0].id) : '', date: '', name: '' });
       await load();
       setMessage('Закрытие места создано.');
@@ -154,15 +160,18 @@ export function CoworkingSchedulePageClient({ coworkingId }: { coworkingId: numb
   async function confirmPendingOperation() {
     if (!pendingOperation) return;
     setConfirming(true);
+    setError(null);
     try {
       const response = await requestJson<OperationalImpactDto>(pendingOperation.commitUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(pendingOperation.payload)
+        body: JSON.stringify({ ...pendingOperation.payload, impactHash: pendingOperation.impactHash })
       });
       setImpact(response);
       await pendingOperation.afterCommit();
       setPendingOperation(null);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Не удалось подтвердить операцию.');
     } finally {
       setConfirming(false);
     }
@@ -188,7 +197,7 @@ export function CoworkingSchedulePageClient({ coworkingId }: { coworkingId: numb
       исключениями и закрытиями отдельных мест.</p></div>
     {message ? <Alert variant="success">{message}</Alert> : null}
     {/*{impact ?*/}
-    {/*  <Alert variant="warning">{impact.summary} Затронутые бронирования: {impact.simulatedAffectedFutureBookings}.*/}
+    {/*  <Alert variant="warning">{} Затронутые бронирования: {impact.affectedBookingsCount}.*/}
     {/*    Даты: {impact.affectedDates.join(', ') || 'нет'}.*/}
     {/*    Команды: {formatUserDomainCommandList(impact.plannedUserDomainCommands) || 'нет'}.</Alert> : null}*/}
     <Row className="g-4"><Col lg={4}><Card className="content-card h-100"><Card.Body><Card.Title as="h2"
@@ -270,34 +279,13 @@ export function CoworkingSchedulePageClient({ coworkingId }: { coworkingId: numb
     <Modal show={pendingOperation != null} onHide={() => !confirming && setPendingOperation(null)} size="xl"
            centered><Modal.Header
       closeButton><Modal.Title>{pendingOperation?.title}</Modal.Title></Modal.Header><Modal.Body>{impact ?
-      <Stack gap={3}><Alert variant="warning" className="mb-0">{impact.summary} Всего
-        компенсаций: {formatRublesFromKopecks(impact.totalCompensationAmount)}. Затронутые
-        даты: {impact.affectedDates.join(', ') || 'нет'}.</Alert><Table responsive bordered hover size="sm">
-        <thead>
-        <tr>
-          <th>Бронь</th>
-          <th>Пользователь</th>
-          <th>Место</th>
-          <th>Период</th>
-          <th>Стоимость</th>
-          <th>Компенсация</th>
-        </tr>
-        </thead>
-        <tbody>{impact.affectedBookings.length > 0 ? impact.affectedBookings.map((booking) => <tr
-          key={booking.bookingId}>
-          <td>{booking.bookingId}</td>
-          <td>{booking.user.name} / membership #{booking.user.membershipId}</td>
-          <td>{booking.place.placeName}</td>
-          <td>{booking.startAt?.slice(0, 10)}</td>
-          <td>{formatRublesFromKopecks(booking.bookingAmount)}</td>
-          <td>{formatRublesFromKopecks(booking.compensationAmount)}</td>
-        </tr>) : <tr>
-          <td colSpan={6} className="text-center text-body-secondary">Нет затронутых бронирований</td>
-        </tr>}</tbody>
-      </Table></Stack> : null}</Modal.Body><Modal.Footer><Button variant="outline-secondary"
-                                                                 onClick={() => setPendingOperation(null)}
-                                                                 disabled={confirming}>Отмена</Button><Button
-      variant="danger" onClick={confirmPendingOperation}
+      <OperationalImpactPreview
+        impact={impact}
+        description="После подтверждения система отменит бронирования, которые больше не соответствуют новым правилам расписания, и автоматически начислит пользователям компенсации."
+      /> : null}</Modal.Body><Modal.Footer><Button variant="outline-secondary"
+                                                   onClick={() => setPendingOperation(null)}
+                                                   disabled={confirming}>Отмена</Button><Button
+      variant="primary" onClick={confirmPendingOperation}
       disabled={confirming}>{confirming ? 'Выполняется...' : 'Подтвердить'}</Button></Modal.Footer></Modal>
   </Stack></Container></main>;
 }

@@ -21,6 +21,9 @@ public record PlaceResponse(
         String floorName,
         BigDecimal locX,
         BigDecimal locY,
+        String imageFileId,
+        String previewImageUrl,
+        String fullImageUrl,
         List<String> amenities,
         PlaceTypeSummaryResponse placeType
 ) {

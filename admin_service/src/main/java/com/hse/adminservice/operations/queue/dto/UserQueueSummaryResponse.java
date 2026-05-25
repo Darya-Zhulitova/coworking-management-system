@@ -10,8 +10,8 @@ public record UserQueueSummaryResponse(
         Integer openServiceRequests,
         Integer totalBookings,
         Integer activeBookings,
-        Integer currentBalance,
-        Integer monthlyIncome,
+        Long currentBalance,
+        Long monthlyIncome,
         Integer monthlyOccupancyPercent
 ) {
 }

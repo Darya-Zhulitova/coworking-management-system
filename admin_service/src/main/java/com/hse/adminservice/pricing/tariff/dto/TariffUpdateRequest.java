@@ -1,13 +1,9 @@
 package com.hse.adminservice.pricing.tariff.dto;
 
-import com.hse.adminservice.pricing.discount.dto.TariffDiscountRuleRequest;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 public class TariffUpdateRequest {
@@ -15,10 +11,7 @@ public class TariffUpdateRequest {
     private String name;
     @NotNull
     @Min(0)
-    private Integer pricePerDay;
-    @NotNull
-    @Min(1)
-    private Integer minBookingDays;
+    private Long pricePerDay;
     @NotNull
     @Min(0)
     private Integer fullRefundHoursBefore;
@@ -32,7 +25,5 @@ public class TariffUpdateRequest {
     private BigDecimal dayClosureCompensationCoefficient;
     @DecimalMin("0.0")
     private BigDecimal membershipBlockCompensationCoefficient;
-    @Valid
-    private List<TariffDiscountRuleRequest> discountRules = new ArrayList<>();
     private Boolean active;
 }

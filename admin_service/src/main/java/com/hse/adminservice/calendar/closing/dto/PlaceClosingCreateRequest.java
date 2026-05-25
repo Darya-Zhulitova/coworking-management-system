@@ -14,4 +14,5 @@ public class PlaceClosingCreateRequest {
     private LocalDate date;
     @NotBlank
     private String name;
+    private String impactHash;
 }

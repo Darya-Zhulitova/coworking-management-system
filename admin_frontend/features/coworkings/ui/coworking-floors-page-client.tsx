@@ -20,14 +20,22 @@ export function CoworkingFloorsPageClient({ coworkingId }: { coworkingId: number
     redirectToLogin: true
   });
   const [floors, setFloors] = useState<FloorDto[]>([]);
+  const [floorMapEnabled, setFloorMapEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<number | 'create' | null>(null);
-  const [form, setForm] = useState({ name: '', imageFileId: '' });
+  const [form, setForm] = useState({ name: '' });
   const canManage = useMemo(() => context?.grants.includes('FLOOR_EDIT') ?? false, [context]);
 
-  const load = useCallback(async () => setFloors(await requestJson<FloorDto[]>(`/api/coworkings/${coworkingId}/floors`)), [coworkingId]);
+  const load = useCallback(async () => {
+    const [coworking, floorItems] = await Promise.all([
+      requestJson<{ floorMapEnabled?: boolean }>(`/api/coworkings/${coworkingId}`),
+      requestJson<FloorDto[]>(`/api/coworkings/${coworkingId}/floors`)
+    ]);
+    setFloorMapEnabled(Boolean(coworking.floorMapEnabled));
+    setFloors(floorItems);
+  }, [coworkingId]);
   useEffect(() => {
     let mounted = true;
     load().catch((error) => {
@@ -48,9 +56,9 @@ export function CoworkingFloorsPageClient({ coworkingId }: { coworkingId: number
       await requestJson(`/api/coworkings/${coworkingId}/floors`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify({ name: form.name })
       });
-      setForm({ name: '', imageFileId: '' });
+      setForm({ name: '' });
       await load();
       setSubmitMessage('Этаж создан.');
     } catch (error) {
@@ -93,10 +101,10 @@ export function CoworkingFloorsPageClient({ coworkingId }: { coworkingId: number
                                                                       onChange={(e) => setForm((c) => ({
                                                                         ...c,
                                                                         name: e.target.value
-                                                                      }))} required/><Form.Control
-              placeholder="ID изображения (необязательно)" value={form.imageFileId}
-              onChange={(e) => setForm((c) => ({ ...c, imageFileId: e.target.value }))}/><Button type="submit"
-                                                                                                 disabled={savingId === 'create'}>Создать
+                                                                      }))} required/>{floorMapEnabled ?
+              <Form.Text className="text-muted">План этажа загружается после создания этажа на странице редактирования
+                мест.</Form.Text> : null}<Button type="submit"
+                                                 disabled={savingId === 'create'}>Создать
               этаж</Button></Stack></Form> :
             <Alert variant="secondary" className="mb-0">Недостаточно прав для изменения.</Alert>}
         </Card.Body></Card>
@@ -105,7 +113,7 @@ export function CoworkingFloorsPageClient({ coworkingId }: { coworkingId: number
             <thead>
             <tr>
               <th>Название</th>
-              <th>Карта</th>
+              {floorMapEnabled ? <th>Карта</th> : null}
               <th>Статус</th>
               <th>Действия</th>
             </tr>
@@ -113,7 +121,7 @@ export function CoworkingFloorsPageClient({ coworkingId }: { coworkingId: number
             <tbody>
             {floors.map((floor) => <tr key={floor.id}>
               <td>{floor.name}</td>
-              <td>{floor.imageFileId ?? '—'}</td>
+              {floorMapEnabled ? <td>{floor.imageFileId ? 'Загружена' : '—'}</td> : null}
               <td><Badge bg={floor.active ? 'success' : 'secondary'}>{floor.active ? 'Активен' : 'Неактивен'}</Badge>
               </td>
               <td><Stack direction="horizontal" gap={2}><Button size="sm"

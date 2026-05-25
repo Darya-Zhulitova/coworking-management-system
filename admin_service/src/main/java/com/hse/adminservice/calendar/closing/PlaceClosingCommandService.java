@@ -4,6 +4,7 @@ import com.hse.adminservice.calendar.closing.domain.PlaceClosing;
 import com.hse.adminservice.calendar.closing.dto.PlaceClosingCreateRequest;
 import com.hse.adminservice.calendar.closing.dto.PlaceClosingResponse;
 import com.hse.adminservice.calendar.closing.persistence.PlaceClosingRepository;
+import com.hse.adminservice.common.error.ConflictException;
 import com.hse.adminservice.common.error.ResourceNotFoundException;
 import com.hse.adminservice.common.time.TimeProvider;
 import com.hse.adminservice.coworking.application.CoworkingConfigurationVersionService;
@@ -17,7 +18,10 @@ import com.hse.adminservice.space.place.domain.Place;
 import com.hse.adminservice.space.place.persistence.PlaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,6 +38,7 @@ public class PlaceClosingCommandService {
     private final UserBookingImpactPort userBookingImpactPort;
     private final PlaceClosingValidator placeClosingValidator;
     private final TimeProvider timeProvider;
+    private final PlatformTransactionManager transactionManager;
 
     public List<PlaceClosingResponse> getClosings(Long coworkingId) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.SCHEDULE_READ);
@@ -49,11 +54,6 @@ public class PlaceClosingCommandService {
                 closing -> closing.getCoworking().getId().equals(coworkingId)).map(this::toClosingResponse).toList();
     }
 
-    @Transactional
-    public OperationalImpactResponse createClosing(Long coworkingId, PlaceClosingCreateRequest request) {
-        return commitClosingCreate(coworkingId, request);
-    }
-
     public OperationalImpactResponse previewClosingCreate(Long coworkingId, PlaceClosingCreateRequest request) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.SCHEDULE_EDIT);
         Place place = getPlaceForClosing(coworkingId, request);
@@ -61,27 +61,37 @@ public class PlaceClosingCommandService {
         return userBookingImpactPort.previewForPlaceClosing(place, request.getDate(), request.getName().trim());
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public OperationalImpactResponse commitClosingCreate(Long coworkingId, PlaceClosingCreateRequest request) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.SCHEDULE_EDIT);
-        Coworking coworking = getCoworking(coworkingId);
         Place place = getPlaceForClosing(coworkingId, request);
         placeClosingValidator.ensureCanBeCreated(place.getId(), request.getDate());
+        String impactHash = requireImpactHash(request.getImpactHash());
         OperationalImpactResponse impact = userBookingImpactPort.commitPlaceClosing(
                 place,
                 request.getDate(),
-                request.getName().trim()
+                request.getName().trim(),
+                impactHash
         );
-        savePlaceClosing(coworking, place, request);
-        configurationVersionService.bumpVersion(coworkingId);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> saveCommittedPlaceClosing(
+                coworkingId,
+                request
+        ));
         return impact;
+    }
+
+    private String requireImpactHash(String impactHash) {
+        if (impactHash == null || impactHash.isBlank()) {
+            throw new ConflictException("Сначала выполните предпросмотр изменений, затем подтвердите действие.");
+        }
+        return impactHash.trim();
     }
 
     @Transactional
     public void archiveClosing(Long coworkingId, Long closingId) {
         authorizationService.requireCoworkingAction(coworkingId, Grant.SCHEDULE_EDIT);
         PlaceClosing entity = placeClosingRepository.findByIdAndCoworkingIdAndArchivedFalse(closingId, coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Place closing not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Закрытие места не найдено"));
         LocalDateTime now = timeProvider.now();
         entity.setActive(false);
         entity.setArchived(true);
@@ -93,7 +103,21 @@ public class PlaceClosingCommandService {
 
     private Place getPlaceForClosing(Long coworkingId, PlaceClosingCreateRequest request) {
         return placeRepository.findByIdAndCoworkingIdAndArchivedFalse(request.getPlaceId(), coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Place not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Место не найдено"));
+    }
+
+    private Place getPlaceForClosingForUpdate(Long coworkingId, PlaceClosingCreateRequest request) {
+        return placeRepository.findByIdAndCoworkingIdAndArchivedFalseForUpdate(request.getPlaceId(), coworkingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Место не найдено"));
+    }
+
+    private void saveCommittedPlaceClosing(Long coworkingId, PlaceClosingCreateRequest request) {
+        Coworking coworking = getCoworkingForUpdate(coworkingId);
+        Place place = getPlaceForClosingForUpdate(coworkingId, request);
+        placeClosingValidator.ensureCanBeCreated(place.getId(), request.getDate());
+        savePlaceClosing(coworking, place, request);
+        bumpVersion(coworking);
+        coworkingRepository.save(coworking);
     }
 
     private void savePlaceClosing(Coworking coworking, Place place, PlaceClosingCreateRequest request) {
@@ -110,9 +134,15 @@ public class PlaceClosingCommandService {
                 .build());
     }
 
-    private Coworking getCoworking(Long coworkingId) {
-        return coworkingRepository.findByIdAndArchivedFalse(coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+    private void bumpVersion(Coworking coworking) {
+        long nextVersion = (coworking.getConfigurationVersion() == null ? 0L : coworking.getConfigurationVersion()) + 1L;
+        coworking.setConfigurationVersion(nextVersion);
+        coworking.setUpdatedAt(timeProvider.now());
+    }
+
+    private Coworking getCoworkingForUpdate(Long coworkingId) {
+        return coworkingRepository.findByIdAndArchivedFalseForUpdate(coworkingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
     }
 
     private PlaceClosingResponse toClosingResponse(PlaceClosing entity) {

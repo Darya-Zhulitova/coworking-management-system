@@ -48,16 +48,16 @@ public class CoworkingRoleService {
 
     public CoworkingRoleResponse getRole(Long coworkingId, Long roleId) {
         Role role = roleRepository.findByIdAndCoworkingId(roleId, coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Роль не найдена"));
         return toRoleResponse(role);
     }
 
     @Transactional
     public CoworkingRoleResponse createRole(Long coworkingId, String name, Set<Grant> grants, Boolean active) {
         Coworking coworking = coworkingRepository.findByIdAndArchivedFalse(coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Coworking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Коворкинг не найден"));
         if (roleRepository.existsByCoworkingIdAndNameIgnoreCase(coworkingId, name.trim())) {
-            throw new ConflictException("Role name already exists in this coworking");
+            throw new ConflictException("Роль с таким названием уже существует в этом коворкинге");
         }
         LocalDateTime now = timeProvider.now();
         Role role = roleRepository.save(Role.builder()
@@ -80,9 +80,9 @@ public class CoworkingRoleService {
             Boolean active
     ) {
         Role role = roleRepository.findByIdAndCoworkingId(roleId, coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Роль не найдена"));
         if (roleRepository.existsByCoworkingIdAndNameIgnoreCaseAndIdNot(coworkingId, name.trim(), roleId)) {
-            throw new ConflictException("Role name already exists in this coworking");
+            throw new ConflictException("Роль с таким названием уже существует в этом коворкинге");
         }
         role.setName(name.trim());
         role.setGrantsRaw(roleDefinitions.serialize(grantResolver.normalizeRoleGrants(grants)));
@@ -94,7 +94,7 @@ public class CoworkingRoleService {
     @Transactional
     public void archiveRole(Long coworkingId, Long roleId) {
         Role role = roleRepository.findByIdAndCoworkingId(roleId, coworkingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Роль не найдена"));
         role.setActive(false);
         role.setUpdatedAt(timeProvider.now());
         roleRepository.save(role);

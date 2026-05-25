@@ -34,12 +34,12 @@ export function LoginForm() {
       });
       const data = (await response.json().catch(() => null)) as { message?: string } | null;
       if (!response.ok) {
-        throw new Error(data?.message || 'Не удалось войти. Попробуйте ещё раз.');
+        throw new Error(data?.message || 'Не удалось войти. Попробуйте еще раз.');
       }
       router.replace('/dashboard');
       router.refresh();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Не удалось войти. Попробуйте ещё раз.');
+      setErrorMessage(error instanceof Error ? error.message : 'Не удалось войти. Попробуйте еще раз.');
     } finally {
       setIsSubmitting(false);
     }
@@ -53,7 +53,7 @@ export function LoginForm() {
           <Col md={8} lg={5}>
             <Card className="auth-card">
               <Card.Body className="p-4 p-lg-5"> <Card.Text className="text-body-secondary mb-4">Войдите в систему под
-                учётной записью администратора.</Card.Text>
+                учетной записью администратора.</Card.Text>
                 <Form onSubmit={handleSubmit}>
                   <Form.Group className="mb-3" controlId="email">
                     <Form.Label>Email</Form.Label>

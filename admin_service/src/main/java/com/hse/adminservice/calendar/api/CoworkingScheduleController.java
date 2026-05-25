@@ -27,15 +27,7 @@ public class CoworkingScheduleController {
         return scheduleService.getSchedule(coworkingId);
     }
 
-    @PutMapping
-    public OperationalImpactResponse updateSchedule(
-            @PathVariable Long coworkingId,
-            @Valid @RequestBody CoworkingScheduleDaysRequest request
-    ) {
-        return scheduleService.commitScheduleUpdate(coworkingId, request);
-    }
-
-    @PostMapping("/deactivate/preview")
+    @PostMapping("/preview")
     public OperationalImpactResponse previewScheduleUpdate(
             @PathVariable Long coworkingId,
             @Valid @RequestBody CoworkingScheduleDaysRequest request
@@ -43,7 +35,7 @@ public class CoworkingScheduleController {
         return scheduleService.previewScheduleUpdate(coworkingId, request);
     }
 
-    @PostMapping("/deactivate/commit")
+    @PostMapping("/commit")
     public OperationalImpactResponse commitScheduleUpdate(
             @PathVariable Long coworkingId,
             @Valid @RequestBody CoworkingScheduleDaysRequest request
@@ -66,7 +58,7 @@ public class CoworkingScheduleController {
         return scheduleService.createException(coworkingId, request);
     }
 
-    @PostMapping("/exceptions/deactivate/preview")
+    @PostMapping("/exceptions/preview")
     public OperationalImpactResponse previewExceptionCreate(
             @PathVariable Long coworkingId,
             @Valid @RequestBody
@@ -75,7 +67,7 @@ public class CoworkingScheduleController {
         return scheduleService.previewExceptionCreate(coworkingId, request);
     }
 
-    @PostMapping("/exceptions/deactivate/commit")
+    @PostMapping("/exceptions/commit")
     public OperationalImpactResponse commitExceptionCreate(
             @PathVariable Long coworkingId,
             @Valid @RequestBody
@@ -100,16 +92,7 @@ public class CoworkingScheduleController {
         );
     }
 
-    @PostMapping("/closings")
-    @ResponseStatus(HttpStatus.CREATED)
-    public OperationalImpactResponse createClosing(
-            @PathVariable Long coworkingId,
-            @Valid @RequestBody PlaceClosingCreateRequest request
-    ) {
-        return scheduleService.createClosing(coworkingId, request);
-    }
-
-    @PostMapping("/closings/deactivate/preview")
+    @PostMapping("/closings/preview")
     public OperationalImpactResponse previewClosing(
             @PathVariable Long coworkingId,
             @Valid @RequestBody PlaceClosingCreateRequest request
@@ -117,7 +100,7 @@ public class CoworkingScheduleController {
         return scheduleService.previewClosingCreate(coworkingId, request);
     }
 
-    @PostMapping("/closings/deactivate/commit")
+    @PostMapping("/closings/commit")
     public OperationalImpactResponse commitClosing(
             @PathVariable Long coworkingId,
             @Valid @RequestBody PlaceClosingCreateRequest request
@@ -125,15 +108,7 @@ public class CoworkingScheduleController {
         return scheduleService.commitClosingCreate(coworkingId, request);
     }
 
-    @PostMapping("/close-day")
-    public OperationalImpactResponse closeDay(
-            @PathVariable Long coworkingId,
-            @Valid @RequestBody CloseDayRequest request
-    ) {
-        return scheduleService.commitCloseDay(coworkingId, request);
-    }
-
-    @PostMapping("/close-day/deactivate/preview")
+    @PostMapping("/close-day/preview")
     public OperationalImpactResponse previewCloseDay(
             @PathVariable Long coworkingId,
             @Valid @RequestBody CloseDayRequest request
@@ -141,7 +116,7 @@ public class CoworkingScheduleController {
         return scheduleService.previewCloseDay(coworkingId, request);
     }
 
-    @PostMapping("/close-day/deactivate/commit")
+    @PostMapping("/close-day/commit")
     public OperationalImpactResponse commitCloseDay(
             @PathVariable Long coworkingId,
             @Valid @RequestBody CloseDayRequest request

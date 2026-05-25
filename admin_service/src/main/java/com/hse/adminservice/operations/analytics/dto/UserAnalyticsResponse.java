@@ -14,8 +14,8 @@ public record UserAnalyticsResponse(
         Integer activeBookings,
         Integer unfinishedServiceRequests,
         Integer openPayRequests,
-        Integer totalBalance,
-        Integer monthlyIncome,
+        Long totalBalance,
+        Long monthlyIncome,
         Integer monthlyOccupancyPercent,
         List<AnalyticsMetricPointResponse> monthlyIncomeHistory,
         List<AnalyticsMetricPointResponse> occupancyHistory
